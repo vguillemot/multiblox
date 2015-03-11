@@ -9,7 +9,7 @@ header-includes: \newcommand{\prox}{\text{prox}}
 Le problème de la régression multiple  de $X$ sur $y$ avec une pénalité $\ell_1$ se formule de la manière suivante :
 
 \[
-  \min_{\beta} \{ \frac{1}{2} \|y - X\beta \|^2 + \alpha \|\beta\|_1 = R(\beta) + \alpha \|\beta\|_1 \}
+  \min_{\beta} \left\{ \frac{1}{2} \|y - X\beta \|^2 + \alpha \|\beta\|_1 = R(\beta) + \alpha \|\beta\|_1 \right\}
 \]
 
 LASSO est une méthode classique qui permet d'obtenir la solution du problème précédent. Nous voudrions dans ce rapport explorer une méthode alternative : ISTA[^1].
