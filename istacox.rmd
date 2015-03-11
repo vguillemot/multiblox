@@ -3,7 +3,9 @@ title: "ISTA pour la régression de Cox"
 author: "Vincent Guillemot et Cathy Philippe"
 date: "25/02/2015"
 output: pdf_document
-header-includes: \newcommand{\prox}{\text{prox}}
+header-includes: 
+  \newcommand{\prox}{\text{prox}}
+  \usepackage{graphicx}
 ---
 
 Le problème de la régression de Cox  de $X$ sur $y$ avec une pénalité $\ell_1$ se formule de la manière suivante :
@@ -30,21 +32,27 @@ avec
 Nous proposons d'implémenter en R cet algorithme. Il faut tout d'abord déclarer les fonctions permettant de calculer le gradient de la fonction de perte et l'opérateur proximal.
 
 ```{r definitions}
-grad <- function(X,y,beta) print("???")
+grad <- function(X, y, beta, I, R) {
+  wij <- mapply( function(i, j) t(exp( X[ j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
+  names(wij) <- names(R)
+  xbar <- t(sapply(names(R), function(r) wij[[r]]%*%X[R[[r]], ]) )
+  grad <- colSums( X[I, ] - xbar )
+}
+  
 prox <- function(beta,t,alpha) ifelse(abs(beta)<t*alpha,0,beta-t*alpha*sign(beta))
 ```
 
 Ces fonctions étant définies, nous pouvons implémenter l'algorithme ISTA.
 
 ```{r ista}
-ista <- function(X, y, alpha, kmax=100, epsilon=1e-10) {
+ista <- function(X, y, alpha, kmax=100, epsilon=1e-10, I, R) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
   t <- 1/max(eigen(t(X)%*%X)$values)
   
   for (k in 1:kmax) {
-    betanew <- prox(betaold - t*grad(X,y,betaold),t,alpha)
+    betanew <- prox(betaold - t*grad(X,y,betaold, I, R),t,alpha)
     if ( sum((betanew-betaold)**2) < epsilon ) break
     betaold <- betanew
   }
@@ -54,3 +62,30 @@ ista <- function(X, y, alpha, kmax=100, epsilon=1e-10) {
 ```
 
 # Test sur données simulées
+
+Le script générant des données simulées présenté dans le cadre suivant est extrait de l'aide de la fonction `glmnet::glmnet` :
+
+```{r coxsim, echo=TRUE}
+#Cox
+set.seed(10101)
+N <- 500 ; p <- 30
+nzc <- p/3
+X <- matrix(rnorm(N*p),N,p)
+betastar <- rnorm(nzc)
+fx <- X[,seq(nzc)]%*%betastar/3
+hx <- exp(fx)
+ty <- rexp(N,hx)
+tcens <- rbinom(n=N, prob=.3, size=1)# censoring indicator
+y <- cbind(time=ty,status=1-tcens) # y=Surv(ty,1-tcens) with library(survival)
+
+```
+
+L'application de la méthode `coxnet` à ce jeu de données simulées donne le résultat suivant (notamment sous forme graphique) :
+
+```{r glmnet, fig.align="center", fig.cap="Graphe des coefficients en fonction du paramètre $\\alpha$."}
+require(glmnet)
+fit <- glmnet(X, y, family="cox")
+plot(fit)
+```
+
+
