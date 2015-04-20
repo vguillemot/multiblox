@@ -1,0 +1,121 @@
+---
+title: "ISTA pour la régression de Cox : données réelles + comparaison avec glmnet et plsRcox"
+author: "Vincent Guillemot et Cathy Philippe"
+date: "11/03/2015"
+output: pdf_document
+header-includes: 
+  \newcommand{\prox}{\text{prox}}
+  \usepackage{graphicx}
+---
+
+```{r preambule, echo=FALSE, message=FALSE}
+require(glmnet)
+require(plsRcox)
+```
+
+# Méthodes
+
+
+## Etat de l'art
+
+ * `glmnet`
+ * `plsRcox`
+ 
+## ISTACOX
+
+```{r istacox, echo=FALSE}
+grad <- function(X, y, beta, I, R, gamma) {
+  wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
+  names(wij) <- names(R)
+  xbar <- t(sapply(names(R), function(r) wij[[r]]%*%X[R[[r]], ]) )
+  grad <- -colSums( X[I, ] - xbar ) + gamma*beta 
+}
+
+prox <- function(beta,t,alpha) ifelse(abs(beta)<t*alpha,0,beta-t*alpha*sign(beta))
+norm1 <- function(beta)  sum(abs(beta))
+norm22 <- function(beta)  sum(beta^2)
+
+istacox <- function(X, y, I, R, alpha, gamma, kmax=100, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  betaold <- rnorm(p)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+  
+  for (k in 1:kmax) {
+    betanew <- prox(betaold - t*grad(X, y, betaold, I, R, gamma), t, alpha)
+    #print(betanew)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
+    betaold <- betanew
+  }
+  
+  return(list(beta=betanew, k=k))
+}
+```
+
+
+# Données
+ 
+Données issues de la librairie `plsRcox` : microsatellites et données cliniques pour l'analyse de survie.
+
+```{r data.load, echo=FALSE}
+data(Xmicro.censure_compl_imp)
+data(micro.censure)
+
+X_train_micro <- apply((as.matrix(Xmicro.censure_compl_imp)),FUN="as.numeric",MARGIN=2)[1:80,]
+X <- X_train_micro
+Y_train_micro <- micro.censure$survyear[1:80]
+C_train_micro <- micro.censure$DC[1:80]
+
+# y <- Surv(Y_train_micro, event = C_train_micro)
+y <- cbind(time=Y_train_micro, status=1-C_train_micro) 
+
+```
+
+
+# Résultats
+
+```{r prelim_istacox, echo=FALSE}
+# Ordering data
+X.o <- X[order(y[, 1]), ]
+y.o <- as.data.frame(y[order(y[, 1]), ])
+
+# uncensored patients
+I <- which(y.o$status==1)
+# patients at risk
+R <- lapply( which(y.o$status==1) , function(i) which( y.o$time >= y.o$time[i] ) )
+names(R) <- paste0("R", which(y.o$status==1))
+```
+
+
+
+```{r comp, echo=FALSE}
+t1 <- system.time(res.pls <- plsRcox(Xplan=X_train_micro,time=Y_train_micro,event=C_train_micro,nt=1,sparse=TRUE, alpha.pvals.expli=.15))
+t2 <- system.time(res.glmnet <- cv.glmnet(X_train_micro,y,family="cox",alpha=1/2))
+lambda <- res.glmnet$lambda.min
+# t3 <- system.time(res.istacox <- istacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
+t3 <- system.time(res.istacox <- istacox(X.o, y.o, I, R, alpha=2000, gamma=100))
+
+coef.pls <- res.pls$ww
+coef.glmnet <- as.vector(coef(res.glmnet, s="lambda.min"))
+coef.istacox <- res.istacox$beta
+```
+
+
+
+```{r comp_temps, echo=FALSE, results='asis'}
+knitr::kable( data.frame("plsRcox" = c(t1[3], "?"), 
+                         "COXNET" = c(t2[3], "?"), 
+                         "ISTACOX" = c(t3[3], res.istacox$k), 
+                         row.names=c("Temps","Nbre d'itérations"), check.names = F))
+
+```
+
+
+
+```{r tab_coefs, echo=FALSE, results='asis'}
+knitr::kable(data.frame("plsRcox" = coef.pls,
+                        "COXNET" = coef.glmnet,
+                        "ISTACOX" = coef.istacox, 
+                        check.names = F))
+```
+
