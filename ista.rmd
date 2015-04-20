@@ -99,29 +99,15 @@ où :
 \]
 est le pas négatif dans la mise à jour du gradient proximal.
 
-Si $L$ n'est pas connu, on peut satisfaire l'inégalité (1) par *backtracking line search* : on commence à un pas $\hat{t} > 0$ et on diminue sa valeur, $\hat{t} \leftarrow \beta\hat{t}$ avec $0 < \beta < 1$, jusqu'à ce que (1) soit satisfaite.
-
-```{r}
-# neg_step <- function(X, y, t, beta, alpha){
-#   return((1/t) * (beta - prox(beta - t * grad(X, y, beta), t, alpha)))
-# }
-# line_search_crit <- function(X, y, beta, t, alpha){
-#   G <- neg_step(X, y, t, beta, alpha)
-#   return(ifelse(R(X, y, beta - t*G) <= R(X, y, beta) - t*t(grad(X,y,beta)) %*% G + (t/2)*sum(G)**2, TRUE, FALSE)) 
-# }
-# step_line_search <- function(X, y, beta, t=10, tau=0.5, alpha){
-#   while(!line_search_crit(X, y, beta, t, alpha)){
-#     t <- tau*t
-#   }
-#   return(t)
-# }
+```{r negstep}
 neg_step <- function(X, y, t, beta, alpha, g){
   return((1/t) * (beta - prox(beta - t * g, t, alpha)))
 }
-# line_search_crit <- function(X, y, beta, t, alpha){
-#   G <- neg_step(X, y, t, beta, alpha)
-#   return(ifelse(R(X, y, beta - t*G) <= R(X, y, beta) - t*t(grad(X,y,beta)) %*% G + (t/2)*sum(G)**2, TRUE, FALSE)) 
-# }
+```
+
+Si $L$ n'est pas connu, on peut satisfaire l'inégalité (1) par *backtracking line search* : on commence à un pas $\hat{t} > 0$ et on diminue sa valeur, $\hat{t} \leftarrow \beta\hat{t}$ avec $0 < \beta < 1$, jusqu'à ce que (1) soit satisfaite.
+
+```{r}
 step_line_search <- function(X, y, beta, t=10, tau=0.5, alpha, kmax=1000){
   R <- R(X, y, beta)
   g <- grad(X,y,beta)
@@ -133,7 +119,6 @@ step_line_search <- function(X, y, beta, t=10, tau=0.5, alpha, kmax=1000){
     Gt <- neg_step(X, y, t, beta, alpha, g)
     Rt <- R(X, y, beta - t*Gt)
   }
-#   print(k)
   return(t)
 }
 ```
@@ -159,10 +144,25 @@ ista_adapt <- function(X, y, alpha, kmax=10000, epsilon=1e-10) {
 ```
 
 ## Test sur données simulées
-```{r, results='asis'}
-system.time(res1 <- ista(X, y, alpha=1))
-system.time(res2 <- ista_adapt(X, y, alpha=1))
-(res1$k)
-(res2$k)
-knitr::kable(res<-data.frame("ISTA"=res1$beta, "ISTA adaptatif" = res2$beta, "$\\beta^*$" = betastar,check.names = F))
+
+Le test sur les mêmes données simulées que précedemment permet de comprendre l'intérêt que l'on a à connaître la valeur de la constante de Lipschitz $L$: cela permet d'économiser du temps de calcul...
+
+```{r comparaison, echo=FALSE, results='asis'}
+t1 <- system.time(res1 <- ista(X, y, alpha=1))
+t2 <- system.time(res2 <- ista_adapt(X, y, alpha=1))
+k1 <- res1$k
+k2 <- res2$k
+
+knitr::kable( data.frame("ISTA" = c(t1[3], k1), "ISTA adaptatif" = c(t2[3], k2),
+                         row.names=c("Temps","Nbre d'itérations"), check.names = F))
+
 ```
+
+Les valeurs des coefficients obtenus sont très proches :
+
+```{r tab_coefs, echo=FALSE, results='asis'}
+knitr::kable(data.frame("ISTA" = res1$beta, "ISTA adaptatif" = res2$beta, 
+                        "$\\beta^*$" = betastar,
+                        check.names = F))
+```
+

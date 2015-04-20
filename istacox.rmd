@@ -23,9 +23,13 @@ Comme pour la régression multiple, le principe de cette méthode est de calcule
 \]
 avec
 
-* $\nabla_\ell (\beta) = ???$,
-* $t = ???$,
+* $\nabla_\ell (\beta) = ???$[^1],
+* $t = ???$[^2],
 * $\prox_{t \alpha \|\cdot\|_1}$ est l'opérateur proximal de la norm $\ell_1$ multiplié par $t \lambda$.
+
+[^1]: cf formule dans le manuscrit de thèse.
+[^2]: on ne sait pas déduire $t$ de manière explicite à partir de la constante de Lipschitz du gradient. On donne donc une valeur complètement arbitraire, et on va comparer avec une méthode adaptative. Normalement la méthode adaptative devrait ici montrer son intérêt !
+
 
 # Implémentation en R
 
@@ -76,9 +80,10 @@ betastar <- rnorm(nzc)
 fx <- X[,seq(nzc)]%*%betastar/3
 hx <- exp(fx)
 ty <- rexp(N,hx)
-tcens <- rbinom(n=N, prob=.3, size=1)# censoring indicator
-y <- cbind(time=ty,status=1-tcens) # y=Surv(ty,1-tcens) with library(survival)
-
+# censoring indicator
+tcens <- rbinom(n=N, prob=.3, size=1)
+# y=Surv(ty,1-tcens) with library(survival)
+y <- cbind(time=ty,status=1-tcens) 
 ```
 
 L'application de la méthode `coxnet` à ce jeu de données simulées donne le résultat suivant (notamment sous forme graphique) :
@@ -89,8 +94,10 @@ fit <- glmnet(X, y, family="cox")
 plot(fit)
 ```
 
+Avant de pouvoir appliquer ISTA, il faut ordonner les individus, calculer l'ensemble des patients censurés `I` et les ensembles de patients à risque `R`.
+
 ```{r i_et_r}
-### Sets of patient at risk at Ti
+# Ordering data
 X.o <- X[order(y[, 1]), ]
 y.o <- as.data.frame(y[order(y[, 1]), ])
 
@@ -101,6 +108,7 @@ R <- lapply( which(y.o$status==1) , function(i) which( y.o$time >= y.o$time[i] )
 names(R) <- paste0("R", which(y.o$status==1))
 ```
 
+Cela fait, on applique ISTA sur les données ordonnées.
 
 ```{r}
 beta_star <- c(betastar/3, rep(0, p-3))
