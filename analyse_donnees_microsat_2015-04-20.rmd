@@ -35,7 +35,7 @@ prox <- function(beta,t,alpha) ifelse(abs(beta)<t*alpha,0,beta-t*alpha*sign(beta
 norm1 <- function(beta)  sum(abs(beta))
 norm22 <- function(beta)  sum(beta^2)
 
-istacox <- function(X, y, I, R, alpha, gamma, kmax=100, epsilon=1e-10) {
+istacox <- function(X, y, I, R, alpha, gamma, kmax=10000, epsilon=1e-10) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
@@ -93,7 +93,7 @@ t1 <- system.time(res.pls <- plsRcox(Xplan=X_train_micro,time=Y_train_micro,even
 t2 <- system.time(res.glmnet <- cv.glmnet(X_train_micro,y,family="cox",alpha=1/2))
 lambda <- res.glmnet$lambda.min
 # t3 <- system.time(res.istacox <- istacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
-t3 <- system.time(res.istacox <- istacox(X.o, y.o, I, R, alpha=2000, gamma=100))
+t3 <- system.time(res.istacox <- istacox(X.o, y.o, I, R, alpha=10, gamma=5))
 
 coef.pls <- res.pls$ww
 coef.glmnet <- as.vector(coef(res.glmnet, s="lambda.min"))
