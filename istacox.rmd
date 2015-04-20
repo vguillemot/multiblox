@@ -8,10 +8,10 @@ header-includes:
   \usepackage{graphicx}
 ---
 
-Le problème de la régression de Cox  de $X$ sur $y$ avec une pénalité $\ell_1$ se formule de la manière suivante :
+Le problème de la régression de Cox  de $X$ sur $y$ avec une pénalité $\ell_1$ et une pénalité Ridge se formule de la manière suivante :
 
 \[
-  \min_{\beta} \left\{ - \ell(X,y,\beta) + \alpha \|\beta\|_1 \right\},
+  \min_{\beta} \left\{ - \ell(X,y,\beta) + \alpha \|\beta\|_1 + \gamma \|\beta\|_2^2 \right\},
 \]
 avec $\ell$ la fonction de vraisemblance partielle du modèle de Cox. La vraisemblance devant être maximisée, nous la faisons précéder du signe moins pour transformer le problème en un problème de minimisation.
 
@@ -36,27 +36,29 @@ avec
 Nous proposons d'implémenter en R cet algorithme. Il faut tout d'abord déclarer les fonctions permettant de calculer le gradient de la fonction de perte et l'opérateur proximal.
 
 ```{r definitions}
-grad <- function(X, y, beta, I, R) {
+grad <- function(X, y, beta, I, R, gamma) {
   wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
   names(wij) <- names(R)
   xbar <- t(sapply(names(R), function(r) wij[[r]]%*%X[R[[r]], ]) )
-  grad <- -colSums( X[I, ] - xbar )
+  grad <- -colSums( X[I, ] - xbar ) + gamma*beta 
 }
 
 prox <- function(beta,t,alpha) ifelse(abs(beta)<t*alpha,0,beta-t*alpha*sign(beta))
+norm1 <- function(beta)  sum(abs(beta))
+norm22 <- function(beta)  sum(beta^2)
 ```
 
 Ces fonctions étant définies, nous pouvons implémenter l'algorithme ISTA.
 
 ```{r ista}
-istacox <- function(X, y, I, R, alpha, kmax=100, epsilon=1e-10) {
+istacox <- function(X, y, I, R, alpha, gamma, kmax=100, epsilon=1e-10) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
   t <- 1/max(eigen(t(X)%*%X)$values)
   
   for (k in 1:kmax) {
-    betanew <- prox(betaold - t*grad(X, y, betaold, I, R), t, alpha)
+    betanew <- prox(betaold - t*grad(X, y, betaold, I, R, gamma), t, alpha)
     #print(betanew)
     if ( sum((betanew-betaold)**2) < epsilon ) break
     betaold <- betanew
@@ -73,7 +75,7 @@ Le script générant des données simulées présenté dans le cadre suivant est
 ```{r coxsim, echo=TRUE}
 #Cox
 set.seed(10101)
-N <- 500 ; p <- 9
+N <- 250 ; p <- 66
 nzc <- p/3
 X <- matrix(rnorm(N*p),N,p)
 betastar <- rnorm(nzc)
@@ -111,8 +113,8 @@ names(R) <- paste0("R", which(y.o$status==1))
 Cela fait, on applique ISTA sur les données ordonnées.
 
 ```{r}
-beta_star <- c(betastar/3, rep(0, p-3))
-system.time(res <- istacox(X.o, y.o, I, R, alpha=30, kmax=1000, epsilon=1e-20) )
+beta_star <- c(betastar/3, rep(0, p-nzc))
+system.time(res <- istacox(X.o, y.o, I, R, alpha=30, gamma=30, kmax=1000, epsilon=1e-20) )
 (res$k)
 knitr::kable(df <- data.frame("ISTA COX" = res$beta, "$\\beta^*$" = beta_star, check.names=F))
 ```
@@ -139,43 +141,111 @@ Si $L$ n'est pas connu, on peut satisfaire l'inégalité (1) par *backtracking l
 Il nous faut la fonction de perte $R_{\ell}$ que nous n'avions pas jusqu'alors.
 
 ```{r}
-R_ell <- function(X, y, beta, I, R){
+R_ell <- function(X, y, beta, I, R, gamma){
   truc <- mapply( function(i, j) {X[j, ]%*%beta -log(sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta)))}, I, R, SIMPLIFY = F)
-  sum(unlist(truc))
+  - sum(unlist(truc)) + gamma/2 * norm22(beta)
 }
 ```
 
 
 ```{r}
-cox_step_line_search <- function(X, y, beta, I, R, t=10, tau=0.5, alpha, kmax=1000){
-  R_l <- - R_ell(X, y, beta, I, R)
-  g <- grad(X, y, beta, I, R)
+cox_step_line_search <- function(X, y, beta, I, R, t=10, tau=0.5, alpha, gamma, kmax=1000){
+  R_l <- R_ell(X, y, beta, I, R, gamma)
+  g <- grad(X, y, beta, I, R, gamma)
   Gt <- neg_step(X, y, t, beta, alpha, g)
-  Rt_l <- -R_ell(X, y, beta - t*Gt, I, R)
+  Rt_l <- R_ell(X, y, beta - t*Gt, I, R, gamma)
   for (k in 1:kmax) {
     if (Rt_l <= R_l -t*t(g) %*% Gt + t/2*sum(Gt**2)) break
     t <- tau*t
     Gt <- neg_step(X, y, t, beta, alpha, g)
-    Rt_l <- - R_ell(X, y, beta - t*Gt, I, R)
+    Rt_l <- R_ell(X, y, beta - t*Gt, I, R, gamma)
   }
   return(t)
 }
 ```
 
-où $\alpha$ est le paramètre de spar sité et $t$ le pas à calculer à chaque étape de ISTACOX.
+où $\alpha$ est le paramètre de sparsité, $\gamma$ celui de la ridge et $t$ le pas à calculer à chaque étape de ISTACOX.
 
 ```{r}
-istacox_adapt <- function(X, y, I, R, alpha, kmax=10000, epsilon=1e-10) {
+istacox_adapt <- function(X, y, I, R, alpha, gamma, kmax=10000, epsilon=1e-10) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
   t <- 1/max(eigen(t(X)%*%X)$values)
  
   for (k in 1:kmax) {
-    t <- cox_step_line_search(X, y, betaold, I, R, t, tau=0.95, alpha)
-    betanew <- prox(betaold - t*grad(X,y,betaold, I, R), t, alpha)
+    t <- cox_step_line_search(X, y, betaold, I, R, t, tau=0.95, alpha, gamma)
+    betanew <- prox(betaold - t*grad(X,y,betaold, I, R, gamma), t, alpha)
     if ( sum((betanew-betaold)**2) < epsilon ) break
     betaold <- betanew
+  }
+ 
+  return(list(beta=betanew, k=k))
+}
+```
+
+L'algorithme FISTA est très simlaire à ISTA: seule la mise à jour du vecteur $\beta$ change un peu.
+
+```{r fistacox}
+fistacox <- function(X, y, I, R, alpha, gamma, kmax=10000, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+  betaold <- rnorm(p)
+  betanew <- prox(betaold - t*grad(X,y,betaold,I,R, gamma),t,alpha)
+ 
+  for (k in 2:kmax) {
+    u <- betanew + (k-1) / (k+2) * (betanew - betaold)
+    betaold <- betanew
+    betanew <- prox(u - t*grad(X,y,u,I,R, gamma),t,alpha)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
+  }
+ 
+  return(list(beta=betanew, k=k))
+}
+```
+
+FISTACox adaptatif
+
+```{r fistacox_step_line_search}
+fistacox_step_line_search <- function(X, y, u, I, R, t=10, tau=0.95, alpha, gamma, kmax=1000){
+  #   if (t < 1e-32) return(t)
+  Ru_l <- R_ell(X, y, u, I, R, gamma)
+  gradu <- grad(X, y, u, I, R, gamma)
+  x <- prox(u - t*gradu, t, alpha)
+  Rx_l <- R_ell(X, y, x, I, R, gamma)
+#   cat("Valeur gauche (Rx)  =", Rx, "\n")
+#   cat("Valeur droite =", Ru+ t(gradu) %*% (x-u) + 1/(2*t)*sum((x-u)**2), "\n")
+#   cat("Test1", (Rx > Ru+ t(gradu) %*% (x-u) + 1/(2*t)*sum((x-u)**2)), "\n")
+#   cat("Test2", (Rx >= Ru+ t(gradu) %*% (x-u) + 1/(2*t)*sum((x-u)**2)), "\n")
+#   cat("t==0?", t, "... ", t==0, "\n")
+  for (k in 1:kmax) {
+    if (Rx_l <= Ru_l +  crossprod(gradu, x-u) + 1/(2*t)*sum((x-u)**2)) break
+    t <- tau*t
+    x <- prox(u - t*gradu,t,alpha)
+    Rx_l <- R_ell(X, y, x, I, R, gamma)
+#     cat(k)
+  }
+#   cat("k = ",k,"\n")
+  return(t)
+}
+```
+
+
+```{r fistacox_adapt}
+fistacox_adapt <- function(X, y, I, R, alpha, gamma, kmax=10000, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+  betaold <- rnorm(p)
+  betanew <- prox(betaold - t*grad(X,y,betaold,I,R, gamma),t,alpha)
+ 
+  for (k in 2:kmax) {
+    u <- betanew + (k-1) / (k+2) * (betanew - betaold)
+    t <- fistacox_step_line_search(X, y, u, I, R, t, tau=0.95, alpha, gamma)
+    betaold <- betanew
+    betanew <- prox(u - t*grad(X,y,u,I,R, gamma),t,alpha)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
   }
  
   return(list(beta=betanew, k=k))
@@ -187,12 +257,19 @@ istacox_adapt <- function(X, y, I, R, alpha, kmax=10000, epsilon=1e-10) {
 Le test sur les mêmes données simulées que précedemment permet de comprendre l'intérêt que l'on a à connaître la valeur de la constante de Lipschitz $L$: cela permet d'économiser du temps de calcul...
 
 ```{r comparaison, echo=FALSE, results='asis'}
-t1 <- system.time(res1 <- istacox(X.o, y.o, I, R, alpha=30))
-t2 <- system.time(res2 <- istacox_adapt(X.o, y.o, I, R, alpha=30))
+t0 <- system.time(coxnet_res <- cv.glmnet(x = X, y = y, type.measure = "deviance", family = "cox", alpha=0.5))
+(lambda <- coxnet_res$lambda.min)
+t1 <- system.time(res1 <- istacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
+t2 <- system.time(res2 <- istacox_adapt(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
+t3 <- system.time(res3 <- fistacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
+t4 <- system.time(res4 <- fistacox_adapt(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
+
 k1 <- res1$k
 k2 <- res2$k
+k3 <- res3$k
+k4 <- res4$k
 
-knitr::kable( data.frame("ISTACOX" = c(t1[3], k1), "ISTACOX adaptatif" = c(t2[3], k2),
+knitr::kable( data.frame("COXNET" = c(t0[3], "?"), "ISTACOX" = c(t1[3], k1), "ISTACOX ada" = c(t2[3], k2), "FISTACOX" = c(t3[3], k3), "FISTACOX ada" = c(t4[3], k4),
                          row.names=c("Temps","Nbre d'itérations"), check.names = F))
 
 ```
@@ -200,8 +277,7 @@ knitr::kable( data.frame("ISTACOX" = c(t1[3], k1), "ISTACOX adaptatif" = c(t2[3]
 Les valeurs des coefficients obtenus sont très proches :
 
 ```{r tab_coefs, echo=FALSE, results='asis'}
-beta_star <- c(betastar/3, rep(0, p-3))
-knitr::kable(data.frame("ISTACOX" = res1$beta, "ISTACOX adaptatif" = res2$beta, 
+knitr::kable(data.frame("COXNET" = as.vector(coef(coxnet_res, s="lambda.min")), "ISTACOX" = res1$beta, "ISTACOX ada" = res2$beta, "FISTACOX" = res3$beta, "FISTACOX ada" = res4$beta,
                         "$\\beta^*$" = beta_star,
                         check.names = F))
 ```

@@ -1,7 +1,7 @@
 ---
 title: "FISTA pour la régression multiple"
-author: "Cathy Philippe"
-date: "11/03/2015"
+author: "Vincent Guillemot et Cathy Philippe"
+date: "20/04/2015"
 output: pdf_document
 header-includes:
   \newcommand{\prox}{\text{prox}}
