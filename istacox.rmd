@@ -1,7 +1,7 @@
 ---
 title: "ISTA pour la régression de Cox"
 author: "Vincent Guillemot et Cathy Philippe"
-date: "25/02/2015"
+date: "11/03/2015"
 output: pdf_document
 header-includes: 
   \newcommand{\prox}{\text{prox}}
@@ -53,7 +53,7 @@ istacox <- function(X, y, alpha, kmax=100, epsilon=1e-10, I, R) {
   
   for (k in 1:kmax) {
     betanew <- prox(betaold - t*grad(X, y, betaold, I, R), t, alpha)
-    print(betanew)
+    #print(betanew)
     if ( sum((betanew-betaold)**2) < epsilon ) break
     betaold <- betanew
   }
@@ -103,6 +103,9 @@ names(R) <- paste0("R", which(y.o$status==1))
 
 
 ```{r}
-res <- istacox(X.o, y.o, alpha=30, kmax=1000, epsilon=1e-20, I, R) 
+beta_star <- c(betastar/3, rep(0, p-3))
+system.time(res <- istacox(X.o, y.o, alpha=30, kmax=1000, epsilon=1e-20, I, R) )
+(res$k)
+knitr::kable(df <- data.frame("ISTA COX" = res$beta, "$\\beta^*$" = beta_star, check.names=F))
 ```
 
