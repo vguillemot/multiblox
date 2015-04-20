@@ -3,22 +3,255 @@ title: "FISTA pour la régression multiple"
 author: "Cathy Philippe"
 date: "11/03/2015"
 output: pdf_document
+header-includes:
   \newcommand{\prox}{\text{prox}}
   \usepackage{graphicx}
+  \usepackage{amsmath, amssymb}
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Dans ce document, nous  proposons de résoudre le même problème de régression multiple de $X$ sur $y$ avec une pénalité $\ell_1$ que dans le document `ista.rmd` :
+\[
+  \min_{\beta} \left( \underbrace{\frac{1}{2} \|y - X\beta \|^2}_{=R(\beta)} + \alpha \|\beta\|_1 \right).
+\]
+Nous voudrions comparer ISTA, adaISTA[^1] avec leurs versions accéléres FISTA et adaFISTA[^2][^3].
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+[^1]: adaISTA = ISTA avec un pas adaptatif.
+[^2]: adaFISTA = FISTA avec un pas adaptatif.
+[^3]: Cf. [ici](http://www.seas.ucla.edu/~vandenbe/236C/lectures/proxgrad.pdf) et [ici.](http://www.seas.ucla.edu/~vandenbe/236C/lectures/fgrad.pdf)
+
+# Principe
+
+Nous avons vu que le principe de ISTA est de calculer à chaque itération la mise à jour du vecteur des poids de la manière suivante :
+\[
+  \beta^{k+1} \leftarrow \prox_{t \lambda \|\cdot\|_1} \left(  \beta^k - t_k \nabla_R (\beta^k) \right),
+\]
+avec
+
+* $\nabla_R (\beta) = X^\top (X\beta - y)$,
+* $t = \left( \lambda_{\max} (X^\top X) \right)^{-1}$,
+* $\prox_{t \alpha \|\cdot\|_1}$ est l'opérateur proximal de la norm $\ell_1$ multiplié par $t \lambda$,
+* $t_k$ un pas fixé ou déterminé par _line search_.
+
+Le principe de FISTA est le même, sauf que l'itération courante se base sur les deux itérations précédentes plutôt qu'une pour améliorer la direction de "descente"[^4] :
+\begin{align*}
+  u & = \beta^k + \frac{k-1}{k+2} \big( \beta^k -\beta^{k-1} \big)\\
+  \beta^{k+1} & \leftarrow \prox_{t \lambda \|\cdot\|_1} \left(  u - t_k \nabla_R (u) \right)
+\end{align*}
+
+
+[^4]: Attention, FISTA n'est pas une méthode de descente, parfois la valeur courante de la fonction objectif ne diminue pas par rappport à l'itération précédente.
+
+# Implémentation en R
+
+Nous proposons tout d'abord d'implémenter en R ISTA et FISTA afin de les comparer. Il faut tout d'abord déclarer les fonctions permettant de calculer le gradient de la fonction de perte et l'opérateur proximal.
+
+```{r definitions}
+grad <- function(X,y,beta) t(X) %*% (X %*%beta - y)
+prox <- function(beta,t,alpha) ifelse(abs(beta)<t*alpha,0,beta-t*alpha*sign(beta))
+norml1 <- function(beta)  sum(abs(beta))
+R <- function(X,y,beta) sum( (X%*%beta - y)**2 )
+```
+
+Ces fonctions étant définies, nous pouvons implémenter l'algorithme ISTA.
+
+```{r ista}
+ista <- function(X, y, alpha, kmax=10000, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  betaold <- rnorm(p)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+ 
+  for (k in 1:kmax) {
+    betanew <- prox(betaold - t*grad(X,y,betaold),t,alpha)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
+    betaold <- betanew
+  }
+ 
+  return(list(beta=betanew, k=k))
+}
+```
+
+L'algorithme FISTA est très simlaire à ISTA: seul la mise à jour du vecteur $\beta$ change un peu.
+
+```{r fista}
+fista <- function(X, y, alpha, kmax=10000, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+  betaold <- rnorm(p)
+  betanew <- prox(betaold - t*grad(X,y,betaold),t,alpha)
+ 
+  for (k in 2:kmax) {
+    u <- betanew + (k-1) / (k+2) * (betanew - betaold)
+    betaold <- betanew
+    betanew <- prox(u - t*grad(X,y,u),t,alpha)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
+  }
+ 
+  return(list(beta=betanew, k=k))
+}
+```
+
+# Test sur données simulées
+
+Les données simulées :
+
+```{r donnees}
+n <- 50
+p <- 20
+set.seed(1234)
+
+betastar <- c(1, 3, -1, 5, rep(0, p-4))
+X <- matrix(rnorm(n*p), n, p)
+
+y <- X %*% betastar + 0.1*rnorm(n)
+```
+
+La comparaison entre ISTA et FISTA est résumée dans le tableau suivant : 
+```{r comp_ista_fista, echo=FALSE}
+t1 <- system.time(res1 <- ista(X, y, alpha=1))
+t2 <- system.time(res2 <- fista(X, y, alpha=1))
+k1 <- res1$k
+k2 <- res2$k
+
+knitr::kable( data.frame("ISTA" = c(t1[3], k1), "FISTA" = c(t2[3], k2),
+                         row.names=c("Temps","Nbre d'itérations"), check.names = F))
+```
+
+... on remarque que pour un exemple en petites dimensions, la différence est assez subtile.
+
+
+
+# ISTA avec un pas adaptatif (adaISTA), calculé par line search
+
+Pour le pas $t$ constant et $0 \le t \le \frac{1}{L}$, $L$ étant la constante de Lipschitz, l'inégalité suivante est vérifiée :
+\[
+  g(x - tG_t(x)) \le g(x) - t \nabla g(x)^\top G_t(x) + \frac{t}{2}\Vert G_t(x)\Vert_2^2  (1)
+\]
+où :
+\[
+  G_t(x) = \frac{1}{t}\left( x - \prox_{th}(x - t \nabla g(x)) \right)
+\]
+est le pas négatif dans la mise à jour du gradient proximal.
+
+```{r negstep}
+neg_step <- function(X, y, t, beta, alpha, g){
+  return((1/t) * (beta - prox(beta - t * g, t, alpha)))
+}
+```
+
+Si $L$ n'est pas connu, on peut satisfaire l'inégalité (1) par *backtracking line search* : on commence à un pas $\hat{t} > 0$ et on diminue sa valeur, $\hat{t} \leftarrow \beta\hat{t}$ avec $0 < \beta < 1$, jusqu'à ce que (1) soit satisfaite.
 
 ```{r}
-summary(cars)
+step_line_search <- function(X, y, beta, t=10, tau=0.5, alpha, kmax=1000){
+  R <- R(X, y, beta)
+  g <- grad(X,y,beta)
+  Gt <- neg_step(X, y, t, beta, alpha, g)
+  Rt <- R(X, y, beta - t*Gt)
+  for (k in 1:kmax) {
+    if (Rt <= R -t*t(g) %*% Gt + t/2*sum(Gt**2)) break
+    t <- tau*t
+    Gt <- neg_step(X, y, t, beta, alpha, g)
+    Rt <- R(X, y, beta - t*Gt)
+  }
+  return(t)
+}
 ```
 
-You can also embed plots, for example:
+où $\alpha$ est le paramètre de sparsité et $t$ le pas à calculer à chaque étape de ISTA.
 
-```{r, echo=FALSE}
-plot(cars)
+```{r adaista}
+adaista <- function(X, y, alpha, kmax=10000, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  betaold <- rnorm(p)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+ 
+  for (k in 1:kmax) {
+    t <- step_line_search(X, y, betaold, t, tau=0.95, alpha)
+    betanew <- prox(betaold - t*grad(X,y,betaold), t, alpha)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
+    betaold <- betanew
+  }
+ 
+  return(list(beta=betanew, k=k))
+}
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# FISTA avec un pas adaptatif (adaFISTA), calculé par line search
+
+
+Nous nous baons sur la ["Méthode 1" décrite dans ce document, page 19](http://www.seas.ucla.edu/~vandenbe/236C/lectures/fgrad.pdf). Elle est basée sur le calcul du pas à chaque itération.
+
+```{r stepfista}
+stepfista <- function(X, y, u, t=10, tau=0.5, alpha, kmax=1000){
+  Ru <- R(X, y, u)
+  gradu <- grad(X,y,u)
+  x <- prox(u - t*gradu,t,alpha)
+  Rx <- R(X, y, x)
+  cat("Valeur gauche (Rx)  =", Rx, "\n")
+  cat("Valeur droite =", Ru+ t(gradu) %*% (x-u) + 1/(2*t)*sum((x-u)**2), "\n")
+  cat("Test1", (Rx > Ru+ t(gradu) %*% (x-u) + 1/(2*t)*sum((x-u)**2)), "\n")
+  cat("Test2", (Rx >= Ru+ t(gradu) %*% (x-u) + 1/(2*t)*sum((x-u)**2)), "\n")
+  for (k in 1:kmax) {
+    if (Rx > Ru+  crossprod(gradu, x-u) + 1/(2*t)*sum((x-u)**2)) break
+    t <- tau*t
+    x <- prox(u - t*gradu,t,alpha)
+    Rx <- R(X, y, x)
+  }
+  return(t)
+}
+```
+
+L'implémentation de adaFISTA ressemble enfin beaucoup à celle de FISTA, mis à part
+
+```{r adafista}
+adafista <- function(X, y, alpha, kmax=10000, epsilon=1e-10) {
+  p <- ncol(X)
+  n <- nrow(X)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+  betaold <- rnorm(p)
+  betanew <- prox(betaold - t*grad(X,y,betaold),t,alpha)
+ 
+  for (k in 2:kmax) {
+    u <- betanew + (k-1) / (k+2) * (betanew - betaold)
+    t <- stepfista(X, y, u, t, tau=0.9, alpha)
+    betaold <- betanew
+    betanew <- prox(u - t*grad(X,y,u),t,alpha)
+    if ( sum((betanew-betaold)**2) < epsilon ) break
+  }
+ 
+  return(list(beta=betanew, k=k))
+}
+```
+
+
+## Test sur données simulées
+
+Le test sur les mêmes données simulées que précedemment permet de comprendre l'intérêt que l'on a à connaître la valeur de la constante de Lipschitz $L$: cela permet d'économiser du temps de calcul...
+
+```{r comparaison, echo=FALSE, results='asis'}
+t3 <- system.time(res3 <- adaista(X, y, alpha=1))
+t4 <- system.time(res4 <- adafista(X, y, alpha=1))
+k3 <- res3$k
+k4 <- res4$k
+
+knitr::kable( data.frame("ISTA" = c(t1[3], k1), 
+                         "FISTA" = c(t2[3], k2),
+                         "adaISTA" = c(t3[3], k3),
+                         "adaFISTA" = c(t4[3], k4),
+                         row.names=c("Temps","Nbre d'itérations"), check.names = F))
+
+```
+
+Les valeurs des coefficients obtenus sont très proches :
+
+```{r tab_coefs, echo=FALSE, results='asis'}
+knitr::kable(data.frame("ISTA" = res1$beta, 
+                        "FISTA" = res2$beta, 
+                        "adaISTA" = res3$beta, 
+                        "adaFISTA" = res4$beta, 
+                        "$\\beta^*$" = betastar,
+                        check.names = F))
+```
