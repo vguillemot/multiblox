@@ -1,0 +1,9 @@
+{
+"pathtoscript": "/home/philippe/github/multiblox/istacox_MapRedR/scripts/",
+"cv_method": "MCCV",
+"cv_metric": "deviance",
+"inner_cv_method": "MCCV",
+"inner_cv_metric": "deviance",
+"nf": 20,
+"nfi": 10
+}
