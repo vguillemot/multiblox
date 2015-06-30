@@ -51,7 +51,7 @@ norm22 <- function(beta)  sum(beta^2)
 Ces fonctions étant définies, nous pouvons implémenter l'algorithme ISTA.
 
 ```{r ista}
-istacox <- function(X, y, I, R, alpha, gamma, kmax=100, epsilon=1e-10) {
+istacox <- function(X, y, I, R, alpha, gamma, kmax=1000, epsilon=1e-10) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
@@ -258,11 +258,11 @@ Le test sur les mêmes données simulées que précedemment permet de comprendre
 
 ```{r comparaison, echo=FALSE, results='asis'}
 t0 <- system.time(coxnet_res <- cv.glmnet(x = X, y = y, type.measure = "deviance", family = "cox", alpha=0.5))
-(lambda <- coxnet_res$lambda.min)
-t1 <- system.time(res1 <- istacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
-t2 <- system.time(res2 <- istacox_adapt(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
-t3 <- system.time(res3 <- fistacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
-t4 <- system.time(res4 <- fistacox_adapt(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda))
+(lambda <- coxnet_res$lambda.min/10)
+t1 <- system.time(res1 <- istacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda, kmax=1000))
+t2 <- system.time(res2 <- istacox_adapt(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda, kmax=1000))
+t3 <- system.time(res3 <- fistacox(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda, kmax=1000))
+t4 <- system.time(res4 <- fistacox_adapt(X.o, y.o, I, R, alpha=0.5*lambda, gamma=0.25 * lambda, kmax=1000))
 
 k1 <- res1$k
 k2 <- res2$k
@@ -281,3 +281,15 @@ knitr::kable(data.frame("COXNET" = as.vector(coef(coxnet_res, s="lambda.min")), 
                         "$\\beta^*$" = beta_star,
                         check.names = F))
 ```
+
+
+
+
+```{r plotbetas, echo=FALSE}
+layout(matrix(1:4,2,2))
+plot(beta_star, res1$beta, main="ISTACOX", xlab=expression(beta^symbol("*")), ylab=expression(hat(beta)))
+plot(beta_star, res2$beta, main="ISTACOX ada", xlab=expression(beta^symbol("*")), ylab=expression(hat(beta)))
+plot(beta_star, res3$beta, main="FISTACOX", xlab=expression(beta^symbol("*")), ylab=expression(hat(beta)))
+plot(beta_star, res4$beta, main="FISTACOX ada", xlab=expression(beta^symbol("*")), ylab=expression(hat(beta)))
+```
+
