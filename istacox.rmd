@@ -51,7 +51,7 @@ norm22 <- function(beta)  sum(beta^2)
 Ces fonctions étant définies, nous pouvons implémenter l'algorithme ISTA.
 
 ```{r ista}
-istacox <- function(X, y, I, R, alpha, gamma, kmax=100, epsilon=1e-10) {
+istacox <- function(X, y, I, R, alpha, gamma, kmax=10000, epsilon=1e-10) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
