@@ -1,5 +1,5 @@
 istacox.lambda.tune <-
-  function(X, y, trainmat, i, outer_it, lambda.grid, scale=T, method="CV", metric="exactConcordanceIndex", adaptative=TRUE, fast=TRUE){
+  function(X, y, trainmat, i, outer_it, lambda.grid, scale=T, method="CV", metric="spll", adaptative=TRUE, fast=TRUE){
     # x is a list of B (p_k by n) matrices of predictors
     # y dataframe of survival times and censoring, 
     # trainmat matrix of training sets indices
@@ -67,15 +67,15 @@ istacox.lambda.tune <-
       }
       cat("\n")
       
-      ##2) Estimating the betas on the training set x, I, R, D, alpha, gamma, eps = 0.001, max.iter = 10000, beta.init = NULL
-      res[[l]]<- istacox(x=x.o, I.train, R.train, alpha=0.5*lambda.grid[l,], gamma=0.25*lambda.grid[l,], beta.init=beta0, max.iter=100, adaptative=adaptative, fast=fast)
+      ##2) Estimating the betas on the training set x, I, R, alpha, gamma, eps = 0.001, kmax = 10000
+      res[[l]]<- istacox(x=x.o, I.train, R.train, alpha=0.5*lambda.grid[l,], gamma=0.25*lambda.grid[l,], kmax=1000, ada=adaptative, fast=fast)
       beta.train <- res[[l]]$beta
 
       ### predict
-      pred <- istacox.predict(model.train=res[[l]], x.train=X.train, y.train=y.train, x.test=X.test)      
+      pred <- istacox.predict(model=res[[l]], newdata=X.test, newy=y.test)
       
       ##5) get and accumulate the score
-      pred.score[[l]] <- istacox.score(pred$ychapo, as.matrix(y.test), metric=metric)$perf
+      pred.score[[l]] <- istacox.score(pred$est, as.matrix(y.test), type=metric)$perf
       beta0 <- res[[l]]$beta # update beta0 for warm restart
     }
     return(list(res=res, pred.score=pred.score))

@@ -1,0 +1,3 @@
+istacox.reduce <-function(){
+  
+}
