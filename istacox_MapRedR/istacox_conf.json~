@@ -3,8 +3,7 @@
 "model.selection": true,
 "make.grid.func": "make.lambda.grid.R",
 "model.mapper": "map_istaCox.R",
-"model.custom.param.map": "/home/philippe/github/multiblox/istacox_MapRedR/scripts/",
+"model.custom.param.map": "true true /home/philippe/github/multiblox/istacox_MapRedR/scripts/",
 "model.outer.reducer": "reduce.outer.istaCox.R",
 "model.inner.reducer": "reduce.inner.istaCox.R"
-
 }
