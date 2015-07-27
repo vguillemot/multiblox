@@ -1,7 +1,7 @@
 {
-  "pathtowritefile": "/home/philippe/Projets/these/multiblox/istaCox_MapRedR_results/test/",
-  "data_source": "/home/philippe/github/multiblox/istacox_MapRedR/scripts/generate_survival_simu_data.R",
-  "pathtodata" : "/home/philippe/github/multiblox/istacox_MapRedR/scripts/",
+  "pathtowritefile": "/home/cathy/Projets/these/multiblox/istaCox_MapRedR_results/test/",
+  "data_source": "/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/generate_survival_simu_data.R",
+  "pathtodata" : "/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/",
   "simu": {
     "B": 1,
     "B.CGH" : 0,

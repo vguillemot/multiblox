@@ -14,10 +14,14 @@ istacox.lambda.tune <-
     library(CMA)
     library(survival)
   #  library(multiblox)
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
+#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
+#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
+  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
+  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
     
     
     B <- length(X) # nb of blocks

@@ -1,4 +1,4 @@
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
 
 sparse.partial.loglik <- function(model, newdata, newy, lambda){
   # model : beta of the fitted model

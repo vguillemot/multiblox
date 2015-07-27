@@ -1,7 +1,7 @@
 # reducer for model selection in multiblog
-source("istacox.R")
-source("istacox.predict.R")
-source("istacox.score.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 

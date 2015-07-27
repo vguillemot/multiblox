@@ -17,7 +17,7 @@ generate_survival_simu_data <-
     #library(multiblog) # for idn function
     
     library(mvtnorm) # for rmvnorm function
-    library(cghseg) # to simulate CGH data (non-normal distribution)
+    #library(cghseg) # to simulate CGH data (non-normal distribution)
     library(glmnet)
     
     if (B.CGH!=0){

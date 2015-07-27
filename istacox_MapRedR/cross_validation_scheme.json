@@ -1,5 +1,5 @@
 {
-"pathtoscript": "/home/philippe/github/multiblox/istacox_MapRedR/scripts/",
+"pathtoscript": "/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/",
 "cv_method": "MCCV",
 "cv_metric": "spll",
 "inner_cv_method": "MCCV",

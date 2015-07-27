@@ -4,7 +4,8 @@ istacox.predict <- function(model.train, x.test, y.test, lambda){
   #   y.test outcome of the test set, 
   
   library(survival)
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
+  #source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
+  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
   
   pll <- sparse.partial.loglik(model=model.train, newdata=x.test, newy=y.test, lambda=lambda)
   
