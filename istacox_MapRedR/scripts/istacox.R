@@ -49,35 +49,30 @@ fistacox_step_line_search <- function(X, u, I, R, t=10, tau=0.95, alpha, gamma, 
 }
 
 istacox <- function(X, I, R, alpha, gamma, kmax=1000, epsilon=1e-10, 
-                     fast=FALSE, ada=FALSE) {
+                    fast=FALSE, ada=FALSE) {
   p <- ncol(X)
   n <- nrow(X)
   betaold <- rnorm(p)
   t <- 1/max(eigen(t(X)%*%X)$values)
-
+  
   betanew <- prox(betaold - t*grad(X, betaold, I, R, gamma),t,alpha)
-  u <- betaold
   
   for (k in 2:kmax) {
     if (fast) {
-      print("fast")
-      u <- u + (k-1) / (k+2) * (betanew - betaold)
+      u <- betanew + (k-1) / (k+2) * (betanew - betaold)
+    } else {
+      u <- betanew
     }
     if (ada) {
-      print("adapt")
       if (fast) {
-        print("fast")
         t <- fistacox_step_line_search(X, u, I, R, t, tau=0.95, alpha, gamma)
       } else {
         t <- istacox_step_line_search(X, betaold, I, R, t, tau=0.95, alpha, gamma)
       }
-    }else{
-      t <- 1/max(eigen(t(X)%*%X)$values)
     }
+    betaold <- betanew
     betanew <- prox(u - t*grad(X, u, I, R, gamma), t, alpha)
     if (sum((betanew-betaold)**2) < epsilon ) break
-    betaold <- betanew
   }
   return(list(beta=betanew, k=k))
 }
-
