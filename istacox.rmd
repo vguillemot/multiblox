@@ -114,7 +114,7 @@ Cela fait, on applique ISTA sur les données ordonnées.
 
 ```{r}
 beta_star <- c(betastar/3, rep(0, p-nzc))
-system.time(res <- istacox(X.o, y.o, I, R, alpha=30, gamma=30, kmax=1000, epsilon=1e-20) )
+system.time(res <- istacox(X.o, y.o, I, R, alpha=10, gamma=10, kmax=1000, epsilon=1e-20) )
 (res$k)
 knitr::kable(df <- data.frame("ISTA COX" = res$beta, "$\\beta^*$" = beta_star, check.names=F))
 ```
