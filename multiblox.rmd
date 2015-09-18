@@ -1,0 +1,64 @@
+---
+title: "ISTA pour la régression de Cox sur des données multi-blocs"
+author: "Vincent Guillemot et Cathy Philippe"
+date: "18/09/2015"
+output: pdf_document
+header-includes: 
+  - \newcommand{\prox}{\text{prox}}
+  - \newcommand{\link}{\text{link}}
+  - \usepackage{graphicx}
+---
+
+Le problème de la régression de Cox  de $X$ sur $y$ avec une pénalité $\ell_1$ et une pénalité Ridge se formule de la manière suivante :
+
+\[
+  \min_{\beta} \left\{ - \ell(X,y,\beta) + \alpha \|\beta\|_1 + \gamma \|\beta\|_2^2 \right\},
+\]
+avec $\ell$ la fonction de vraisemblance partielle du modèle de Cox. La vraisemblance devant être maximisée, nous la faisons précéder du signe moins pour transformer le problème en un problème de minimisation.
+
+Si on considère que l'on dispose de plusieurs blocs de données liés au même $y$, nous proposons de minimiser le critère suivant
+\[
+  \min_{\beta} \left\{ - \sum_b \ell(X_b,y,\beta_b) + \sum_b \lambda_b\left( \alpha_b \|\beta_b\|_1 + \frac{1-\alpha_b}{2} \|\beta_b\|_2^2\right) 
+   - \sum_b \sum_{b' \neq b} c_{b,b'} (X_b\beta_b)^\top X_{b'}\beta_{b'} \right\},
+\]
+avec $\ell$ la fonction de vraisemblance partielle du modèle de Cox. La vraisemblance devant être maximisée, nous la faisons précéder du signe moins pour transformer le problème en un problème de minimisation.
+
+# Principe
+
+Comme pour la régression multiple, le principe de cette méthode est de calculer à chaque itération la mise à jour du vecteur des poids de la manière suivante (pour le bloc $b$) :
+\[
+  \beta^{i+1}_b \leftarrow \prox_{s_b \lambda_b \alpha_b \|\cdot\|_1} \left(  \beta_b^i - s_b \left(\nabla_\ell (\beta_b^i) 
+                        + (1-\alpha_b) \beta_b^i - \sum_{b' \neq b} c_{b,b'} (X_b)^\top X_{b'}\beta_{b'} \right)\right\},
+\] 
+avec
+
+* $\nabla_\ell (\beta)$[^1] est le gradient de la vraisemblance partielle de Cox,
+* $s_b$ est approximé par la valeur propre maximale de $X_b^\top X_b$,
+* $\prox_{s_b \lambda_b \alpha_b \|\cdot\|_1}$ est l'opérateur proximal de la norm $\ell_1$ multiplié par $s_b \lambda_b \alpha_b$.
+
+[^1]: cf formule dans le manuscrit de thèse.
+[^2]: on ne sait pas déduire $s$ de manière explicite à partir de la constante de Lipschitz du gradient. On donne donc une valeur complètement arbitraire, et on va comparer avec une méthode adaptative. Normalement la méthode adaptative devrait ici montrer son intérêt !
+
+
+# Implémentation en R
+
+Nous proposons d'implémenter en R cet algorithme. Il faut tout d'abord déclarer les fonctions permettant de calculer le gradient de la fonction de perte et l'opérateur proximal.
+
+Par notation, 
+\[
+  \link = \sum_{b' \neq b} c_{b,b'} (X_b)^\top X_{b'}\beta_{b'}.
+\]
+
+```{r definitions}
+# On appelle link le terme de covariance
+grad <- function(X, y, beta, I, R, alpha, link) {
+  wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
+  names(wij) <- names(R)
+  xbar <- t(sapply(names(R), function(r) wij[[r]]%*%X[R[[r]], ]) )
+  grad <- - colSums( X[I, ] - xbar ) + (1-alpha)*beta  - link
+}
+
+prox <- function(beta,t,alpha) ifelse(abs(beta)<t*alpha,0,beta-t*alpha*sign(beta))
+norm1 <- function(beta)  sum(abs(beta))
+norm22 <- function(beta)  sum(beta^2)
+```
