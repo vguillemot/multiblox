@@ -1,4 +1,5 @@
 istacox_partial_loglik <- function(x, I, R, D, beta, lambda){
+  # multiblock version
 #   x covariates matrix ordered by survival times, 
 #   I ordered indices of non-censored patients, 
 #   R sets of patients at risk for each non-censored times,

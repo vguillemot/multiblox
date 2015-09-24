@@ -14,14 +14,14 @@ istacox.lambda.tune <-
     library(CMA)
     library(survival)
   #  library(multiblox)
-#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
-#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
-#   source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
-  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
-  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
-  source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
+  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
+  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
+#   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
+#   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+#   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+#   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
     
     
     B <- length(X) # nb of blocks
@@ -93,22 +93,24 @@ istacox.lambda.tune <-
     if(B==1){
       lambda.grid <- t(t(lambda.grid))
     }
-    for (l in 1:nrow(lambda.grid)){
-      cat("lambdas : ", l, " -> ")
-      for (bid in 1:length(lambda.grid[l,])) {
-        cat(" ", lambda.grid[l,bid], sep="")
-      }
-      cat("\n")
+    for (l in 1:length(lambda.grid)){
+      cat("lambda : ", l, " -> ")
+#       for (bid in 1:length(lambda.grid[l,])) {
+#         cat(" ", lambda.grid[l,bid], sep="")
+#       }
+#       cat("\n")
       
       ##2) Estimating the betas on the training set x, I, R, alpha, gamma, eps = 0.001, kmax = 10000
       print(adaptative)
-      res[[l]]<- istacox(X=x.o, I.train, R.train, alpha=0.5*lambda.grid[l,], gamma=0.25*lambda.grid[l,], kmax=1000, ada=as.logical(adaptative), fast=as.logical(fast))
-      beta.train <- res[[l]]$beta
+      res[[l]]<- istacox(X=x.o, I.train, R.train, alpha=0.5*lambda.grid[l], gamma=0.25*lambda.grid[l], kmax=1000, ada=as.logical(adaptative), fast=as.logical(fast))
+      #beta.train <- res[[l]]$beta
 
       ### predict
-      pred <- istacox.predict(model=res[[l]], x.test=X.test, y.test=y.test, lambda=lambda.grid[l,])
+      pred <- istacox.predict(model=res[[l]], x.test=X.train, y.test=y.train, lambda=lambda.grid[l])
       
       ##5) get and accumulate the score
+      ## formultiblox score is the partial loglikelihood for the training test
+      ## the CV loglikelihood will be computed by the inner reducer
       pred.score[[l]] <- istacox.score(as.matrix(y.test), pred$est, type=metric)$perf
       beta0 <- res[[l]]$beta # update beta0 for warm restart
     }
