@@ -1,4 +1,4 @@
-istacox.score <- function(y.test, y.hat, type=c("spll", "deviance", "logrank")){
+istacox.score <- function(y.test, y.hat, type){
   
   if(type=="spll"){
     return(perf=y.hat)
