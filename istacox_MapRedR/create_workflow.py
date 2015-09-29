@@ -36,7 +36,7 @@ with open(all_jobs_file, 'r') as f:
             key = outer
             if(not dep_dic.has_key(key)):
                 dep_dic[key] = []
-            cur_job = Job(command=cmd, name="Reduce outer %s" %
+            cur_job = Job(command=cmd, name="Reduce inner %s" %
                           (outer))
             red_jobs[key] = cur_job
         elif(cmd[1].endswith(method_cfg["model.outer.reducer"])):

@@ -1,7 +1,10 @@
 # reducer for model selection in multiblox
-source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
-source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
+# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
+source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -14,6 +17,9 @@ n_inner_folds <- strtoi(args[5])
 # custom parameters
 adaptative <- args[6]
 fast <- args[7]
+
+print(adaptative)
+print(fast)
 
 load(input_file_fold) # data, cv_method, cv_metric, ...
 
@@ -32,7 +38,7 @@ models <- NULL
 
 # lambda.opt <- unlist(lambda.grid[which.max(rowSums(pred.score, na.rm=T)), ])
 # cat("Lambda optimal: ", lambda.opt, "\n")
-ret <- list(opt = lambda.opt, pred.score=pred.score, models=models, lambda.grid=lambda.grid)
+#ret <- list(opt = lambda.opt, pred.score=pred.score, models=models, lambda.grid=lambda.grid)
 
 ### Sets of patient at risk at Ti
 if(B==1){
@@ -41,6 +47,8 @@ if(B==1){
   x.o <- X.train[order(y.train[, 1]), ]
 }
 y.o <- as.data.frame(y.train[order(y.train[, 1]), ])
+
+print(dim(x.o))
 
 # uncensored patients
 I.train <- which(y.o$status==1)
@@ -51,7 +59,7 @@ names(R.train) <- paste0("R", which(y.o$status==1))
 ### gather all results
 ### dans le cas de multiblox, istacox.lambda.tune ne calcule que la vraisemblance partielle du training set (pred.score)
 ### et renvoie en plus le modèle
-CV <- NULL
+CV <- matrix(NA, nrow=length(lambda.grid), ncol=n_inner_folds)
 for(i in 1:n_inner_folds) {
   inputfile = paste(input_file_pattern, i,".Rdata", sep="")
   cat("DO:", inputfile, "\n")
@@ -59,7 +67,9 @@ for(i in 1:n_inner_folds) {
   for(l in 1:length(lambda.grid)){
     #   models[[i]] <- cur.model # pour tous les lambdas de la grille
     #   pred.score[, i] <- cur.pred.score # pour tous les lambdas de la grille
-    CV[l,i] <- sum(mapply(function(i){t(x.o[i, ]) %*% cur.model[[l]]$beta - log( sum( exp(x.o[R[[sprintf("R%i", i)]], ] %*% cur.model[[l]]$beta)))}, I)) - cur.pred.score[[l]]
+    print(dim(x.o[R.train[[sprintf("R%i", i)]], ]))
+    CV[l,i] <- sum(mapply(function(i){x.o[i, ] %*% cur.model[[l]][["beta"]] - log( sum( exp(x.o[R.train[[sprintf("R%i", i)]], ] %*% cur.model[[l]][["beta"]])))}, I.train)) - cur.pred.score[l,1]
+    #pll <- sum(mapply( function(i) newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", i)]], ]%*%beta) )), I))
   }
 
 }
@@ -71,18 +81,18 @@ lambda.opt <- unlist(lambda.grid[which.max(rowSums(CV, na.rm=T))])
 ### refit
 model.refit <- istacox(X=x.o, I=I.train, R=R.train, alpha=0.5*lambda.opt, gamma=0.25*lambda.opt, kmax=1000, epsilon=1e-4, 
                        fast=as.logical(fast), ada=as.logical(adaptative))
-cur.beta.train <- model.refit$beta
+cur.beta.train <- model.refit[["beta"]]
 
 ### Pour l'evaluation du modele, il faudra calculer :
 ### 1) la déviance
-### 2) le log rank test
+### 2) le pronostic index
 
 ##3) PREDICT 
-pred <- istacox.predict(model.train=model.refit, x.test=X.test, y.test=y.test)
-model <- pred$est
+pred <- istacox.predict(model=model.refit, x=X.test[[1]], y=y.test, lambda=lambda.opt, type=cv_metric)
+model <- pred[["est"]]
 
 ##4) SCORE: get and accumulate the score
-pred.score <- istacox.score(y.test=as.matrix(y.test), y.hat=pred$est, type=cv_metric)$perf
+pred.score <- istacox.score(y.test=as.matrix(y.test), y.hat=pred[["est"]])[["perf"]]
 
 save(pred.score, lambda.opt, model, model.refit, file=outputfile)
 cat("Writing", outputfile, "\n")

@@ -106,13 +106,13 @@ istacox.lambda.tune <-
       #beta.train <- res[[l]]$beta
 
       ### predict
-      pred <- istacox.predict(model=res[[l]], x.test=X.train, y.test=y.train, lambda=lambda.grid[l], type=metric)
+      pred <- istacox.predict(model=res[[l]], x=x.o, y=y.o, lambda=lambda.grid[l], type=metric)
       
       ##5) get and accumulate the score
       ## formultiblox score is the partial loglikelihood for the training test
       ## the CV loglikelihood will be computed by the inner reducer
-      pred.score[[l]] <- istacox.score(as.matrix(y.test), pred$est)$perf
-      beta0 <- res[[l]]$beta # update beta0 for warm restart
+      pred.score[[l]] <- istacox.score(as.matrix(y.test), pred[["est"]])[["perf"]]
+      beta0 <- res[[l]][["beta"]] # update beta0 for warm restart
     }
     return(list(res=res, pred.score=pred.score))
   }

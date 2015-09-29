@@ -18,6 +18,10 @@ adaptative <- args[8]
 fast <- args[9]
 pathtoscript <- args[10]
 
+print(paste("adaptative : ", adaptative, sep=""))
+print(paste("fast : ", fast, sep=""))
+print(paste("pathtoscript : ", pathtoscript, sep=""))
+
 # load lambda.grid
 load(grid.file)
 lambda.grid <- parameters.grid
@@ -30,7 +34,7 @@ load(fold_file)
 #X, y, trainmat, i, outer_it, lambda.grid, scale=T, method="CV"
 reswr <- istacox.lambda.tune(X=X.train, y=y.train, trainmat, inner_fold, 
                               outer_fold, lambda.grid, scale=scale, method=method, metric=cv_metric, adaptative=adaptative, fast=fast)
-cur.model <- reswr$res
-cur.pred.score <- as.matrix(reswr$pred.score)
-save(cur.pred.score, lambda.grid, file=output_file)
+cur.model <- reswr[["res"]]
+cur.pred.score <- as.matrix(reswr[["pred.score"]])
+save(cur.pred.score, lambda.grid, cur.model, file=output_file)
 cat("Writing", output_file, "\n")

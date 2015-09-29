@@ -6,6 +6,11 @@ norm.l2.2 <- function(beta){
   return(sum(beta^2))
 }
 
+norm.l2 <- function(beta){
+  return(sqrt(sum(beta^2)))
+}
+
+
 #' scale2() is function whose default method centers and scales the columns of a numeric matrix.
 #' @param A  a numeric matrix
 #' @param center  a logical value. If center = TRUE, each column is transformed to have zero mean (default: TRUE)

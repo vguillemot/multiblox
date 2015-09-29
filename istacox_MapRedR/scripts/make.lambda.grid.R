@@ -29,7 +29,7 @@ make.lambda.grid <-
     for(i in 1:B){
       l[[i]]<- lambda.max[[i]]*(lambda.min[[i]]/lambda.max[[i]])^(j/nb.lambda)
       # introduce huge lambda at the beginning
-      l[[i]][[1]] <- 1e+20
+      l[[i]][[1]] <- 1e+4
     }
     if(B==1){
       print("un seul bloc !!")
