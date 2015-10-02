@@ -1,22 +1,23 @@
 # reducer for model selection in multiblox
-# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
-# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+# source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
+# source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
+# source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 
-# common parameters
+# common parameters from command line : Rscript model.inner.reducer fold_file map_file_pattern outer_res_file i nfi cv_metric
 input_file_fold <- args[1]
 input_file_pattern <- args[2]
 outputfile <- args[3]
 outer_fold <- strtoi(args[4])
 n_inner_folds <- strtoi(args[5])
+cv_metric <- args[6]
 # custom parameters
-adaptative <- args[6]
-fast <- args[7]
+adaptative <- args[7]
+fast <- args[8]
 
 print(adaptative)
 print(fast)
@@ -86,13 +87,16 @@ cur.beta.train <- model.refit[["beta"]]
 ### Pour l'evaluation du modele, il faudra calculer :
 ### 1) la déviance
 ### 2) le pronostic index
-
+print(cv_metric)
 ##3) PREDICT 
-pred <- istacox.predict(model=model.refit, x=X.test[[1]], y=y.test, lambda=lambda.opt, type=cv_metric)
-model <- pred[["est"]]
+dev <- istacox.predict(model=model.refit, x=X.test[[1]], y=y.test, lambda=lambda.opt, type="deviance")
+pi <- istacox.predict(model=model.refit, x=X.test[[1]], y=y.test, lambda=lambda.opt, type="pi")
+model_dev <- dev[["est"]]
+model_pi <- pi[["est"]]
 
 ##4) SCORE: get and accumulate the score
-pred.score <- istacox.score(y.test=as.matrix(y.test), y.hat=pred[["est"]])[["perf"]]
+dev.score <- istacox.score(y.test=as.matrix(y.test), y.hat=model_dev)[["perf"]]
+pi.score <- istacox.score(y.test=as.matrix(y.test), y.hat=model_pi)[["perf"]]
 
-save(pred.score, lambda.opt, model, model.refit, file=outputfile)
+save(dev.score, pi.score, lambda.opt, model_dev, model_pi, model.refit, file=outputfile)
 cat("Writing", outputfile, "\n")

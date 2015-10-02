@@ -113,7 +113,7 @@ for (i in 1:nf){
                 inner_cv_method, inner_cv_metric, model.custom.param.map, "\n",sep=" "))
     }
     cat(paste("Rscript",  model.inner.reducer, fold_file, map_file_pattern, outer_res_file,
-              i, nfi, model.custom.param.ired, "\n",sep=" "))
+              i, nfi, cv_metric, model.custom.param.map, "\n",sep=" "))
   } else {
     # write mapper command (without model selection)
     cat(paste("Rscript", model.mapper, fold_file, outer_res_file, i, model.custom.param.map, 

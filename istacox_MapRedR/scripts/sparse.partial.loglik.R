@@ -1,5 +1,5 @@
-#source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
+source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
+#source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
 
 # sparse.partial.loglik <- function(model, newdata, newy, lambda){
 #   # model : beta of the fitted model
@@ -42,8 +42,8 @@ sparse.partial.loglik <- function(model, newdata, newy, lambda){
   R <- lapply( which(y.o$status==1) , function(i) which( y.o$time >= y.o$time[i] ) )
   names(R) <- paste0("R", which(y.o$status==1))
   #print(R)
-  print(dim(newdata))
-  print(length(beta))
+#   print(dim(newdata))
+#   print(length(beta))
   
   #pll <- mapply( function(i, j) sum(newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", j)]], ]%*%beta) ))), I, R)
   pll <- sum(mapply( function(i) newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", i)]], ]%*%beta) )), I))

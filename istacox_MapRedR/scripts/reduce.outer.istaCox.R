@@ -5,25 +5,29 @@ red_file_pattern <- args[1]
 nf <- strtoi(args[2])
 output_file <- args[3]
 
-global.pred.score <- matrix(NA, nrow=nf, ncol=1)
-cur.pred.score <- NULL
+global.dev.score <- matrix(NA, nrow=nf, ncol=1)
+global.pi.score <- matrix(NA, nrow=nf, ncol=1)
+cur.dev.score <- NULL
+cur.pi.score <- NULL
 
 for (i in 1:nf) {
   load(paste(red_file_pattern, i,".Rdata", sep=""))
-  cur.pred.score[[i]] <- pred.score
+  cur.dev.score[[i]] <- dev.score
+  cur.pi.score[[i]] <- pi.score
 }
-global.pred.score[, 1] <- as.matrix(cur.pred.score)
+global.dev.score[, 1] <- as.matrix(cur.dev.score)
+global.pi.score[, 1] <- as.matrix(cur.pi.score)
 
-print(global.pred.score)
+print(global.dev.score)
+print(global.pi.score)
 
-global.stats <- matrix(NA, nrow=3, ncol=1)
-global.stats[1,] <- apply(global.pred.score, 2, mean)
-global.stats[2,] <- apply(global.pred.score, 2, median)
-global.stats[3,] <- apply(global.pred.score, 2, sd)
-rownames(global.stats) <- c("Mean","Median","SD")
+global.dev.stats <- matrix(NA, nrow=3, ncol=1)
+global.pi.stats <- matrix(NA, nrow=3, ncol=1)
 
-print(global.pred.score)
-print(global.stats)
+pdf(paste(output_file, ".pdf", sep=""))
+boxplot(global.dev.score, main="Deviance")
+boxplot(global.pi.score, main="Prognostic Index")
+dev.off()
 
-save(global.pred.score, global.stats, file=output_file)
+save(global.dev.score, global.pi.score, file=output_file)
 cat("Writing", output_file, "\n")

@@ -48,7 +48,7 @@ fistacox_step_line_search <- function(X, u, I, R, t=10, tau=0.95, alpha, gamma, 
   return(t)
 }
 
-istacox <- function(X, I, R, alpha, gamma, kmax=1000, epsilon=1e-10, 
+istacox <- function(X, I, R, alpha, gamma, kmax=1000, epsilon=1e-6, 
                     fast=FALSE, ada=FALSE) {
   p <- ncol(X)
   n <- nrow(X)

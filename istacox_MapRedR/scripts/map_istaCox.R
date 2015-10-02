@@ -4,14 +4,14 @@
 args <- commandArgs(trailingOnly = TRUE)
 print(args)
 
-# common parameters from cross_validation_scheme.json and istacox_conf.json
+# common parameters from command line : Rscript model.mapper fold_file map_output_file grid.file k i inner_cv_method inner_cv_metric model.custom.param.map
 fold_file <- args[1]
 output_file <- args[2]
 grid.file <- args[3]
 inner_fold <-strtoi(args[4])
 outer_fold <- strtoi(args[5])
 method <- args[6]
-cv_metric <- args[7]
+inner_cv_metric <- args[7]
 
 # custom parameters
 adaptative <- args[8]
@@ -33,7 +33,7 @@ load(fold_file)
 
 #X, y, trainmat, i, outer_it, lambda.grid, scale=T, method="CV"
 reswr <- istacox.lambda.tune(X=X.train, y=y.train, trainmat, inner_fold, 
-                              outer_fold, lambda.grid, scale=scale, method=method, metric=cv_metric, adaptative=adaptative, fast=fast)
+                              outer_fold, lambda.grid, scale=scale, method=method, metric=inner_cv_metric, adaptative=adaptative, fast=fast)
 cur.model <- reswr[["res"]]
 cur.pred.score <- as.matrix(reswr[["pred.score"]])
 save(cur.pred.score, lambda.grid, cur.model, file=output_file)
