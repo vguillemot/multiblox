@@ -1,0 +1,16 @@
+{  
+  "model.name" : "multiblox",
+  "model.selection" : true,
+  "make.grid.func" : "make.lambda.grid.R",
+  "model.mapper" : "multiblox.mapper.R",
+  "pathtoscript" : "/home/cathy/git_repo/fork_BDM/brainomics-team/generalized-multiblock/multiblox_MapRedR/",
+  "model.outer.reducer" : "multiblox.outer.reducer.R",
+  "model.inner.reducer" : "multiblox.inner.reducer.R",
+  "model.custom.param.ired" : "complete",
+  "cv_method": "CV",
+  "cv_metric": "exactConcordanceIndex",
+  "inner_cv_method": "CV",
+  "inner_cv_metric": "exactConcordanceIndex",
+  "nfi": 4,
+  "nf": 4
+}
