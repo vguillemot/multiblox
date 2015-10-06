@@ -87,10 +87,10 @@ istacox.lambda.tune <-
       ##2) Estimating the betas on the training set x, I, R, alpha, gamma, eps = 0.001, kmax = 10000
       print(adaptative)
       res[[l]]<- relax_multiblox(X=x.o, I.train, R.train, D=D, lambda=lambda.grid[l], kmax=1000, ada=as.logical(adaptative), fast=as.logical(fast), beta.init=beta0)
-      #beta.train <- res[[l]]$beta
+      beta.train[[l]] <- res[[l]]$beta
 
       ### predict
-      pred <- istacox.predict(model=res[[l]], x=x.o, y=y.o, lambda=lambda.grid[l], type=metric)
+      pred <- istacox.predict(model=beta.train[[l]], x=x.o, y=y.o, lambda=lambda.grid[l], type=metric)
       
       ##5) get and accumulate the score
       ## formultiblox score is the partial loglikelihood for the training test
