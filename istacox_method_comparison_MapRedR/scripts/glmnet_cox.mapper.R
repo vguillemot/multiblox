@@ -1,9 +1,9 @@
-# Mapper for glmnet Cox
+# Mapper for Coxnet Ridge, LASSO, ElasticNet
 library(glmnet)
 library(survival)
 #library(multiblog)
 source("functions.R")
-source("multiblox.score.R")
+source("istacox.predict.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 # common parameters
@@ -22,12 +22,14 @@ load(fold_file)
 B <- length(X.train)
 method <- cv_method
 outer_cv_metric <- cv_metric
-glm.model.concat <- res.glm.concat <- NULL
-pred.score.concat <- matrix(NA, nrow=1, ncol=1)
-lambda.opt <- matrix(NA, nrow=1, ncol=1)
-lglmnet_cv.perblock <- NULL
-pred.score.perblock <- matrix(NA, nrow=1, ncol=B)
-lambda.opt.perblock <- matrix(NA, nrow=1, ncol=B)
+
+lglmnet_lasso<- lglmnet_ridge <- lglmnet_en <- NULL
+deviance.lasso <- deviance.ridge <- deviance.en <- matrix(NA, nrow=1, ncol=1)
+lambda.opt.lasso <- lambda.opt.ridge <- lambda.opt.en <- matrix(NA, nrow=1, ncol=1)
+
+lglmnet_lasso.perblock <- lglmnet_ridge.perblock <- lglmnet_en.perblock <- NULL
+deviance.lasso.perblock <- deviance.ridge.perblock <- deviance.en.perblock <- matrix(NA, nrow=1, ncol=B)
+lambda.opt.lasso.perblock <- lambda.opt.ridge.perblock <- lambda.opt.en.perblock <- matrix(NA, nrow=1, ncol=B)
 
 # scaling
 if (scale) {
@@ -38,31 +40,78 @@ if (scale) {
   X.test.concat <- scl_fun(data=X.test.concat, scaled=X.train.concat)
 }
 
-# n.zeros.test <- length(y.test[which(y.test==0)])
-# n.uns.test <- length(y.test[which(y.test==1)])
-
 # concat
-lglmnet_cv <- cv.glmnet(x = X.train.concat, y = Surv(y.train[, 1], y.train[, 2]), family=family, alpha = 0, 
-                             type.measure=type.measure)
-attach(what=as.data.frame(X.train.concat))
-y.pred <- predict(lglmnet_cv, newx=X.test.concat, s="lambda.min")
-detach(name=as.data.frame(X.train.concat))
-pred.score.concat[1] <- multiblox.score(as.numeric(y.pred), as.matrix(y.test), metric=outer_cv_metric)$perf
-lambda.opt[1] <- lglmnet_cv$lambda.min
+### alpha = 0 -> LASSO
+lglmnet_lasso <- cv.glmnet(x = X.train.concat, y = Surv(y.train[, 1], y.train[, 2]), family=family, alpha = 0, 
+                             type.measure=type.measure, grouped=TRUE)
+### alpha = 1 -> Ridge
+lglmnet_ridge <- cv.glmnet(x = X.train.concat, y = Surv(y.train[, 1], y.train[, 2]), family=family, alpha = 1, 
+                           type.measure=type.measure, grouped=TRUE)
+### alpha = NULL -> ElasticNet
+lglmnet_en <- cv.glmnet(x = X.train.concat, y = Surv(y.train[, 1], y.train[, 2]), family=family, 
+                           type.measure=type.measure, grouped=TRUE)
+# attach(what=as.data.frame(X.train.concat))
+# y.pred.lasso <- predict(lglmnet_lasso, newx=X.test.concat, s="lambda.min")
+# y.pred.ridge <- predict(lglmnet_ridge, newx=X.test.concat, s="lambda.min")
+# y.pred.en <- predict(lglmnet_en, newx=X.test.concat, s="lambda.min")
+# detach(name=as.data.frame(X.train.concat))
+### deviance
+lambda.opt.lasso[1] <- lglmnet_lasso$lambda.min
+deviance.lasso[1] <- istacox.predict(model=lglmnet_lasso$glmnet.fit$beta[, lambda.opt.lasso[1]], x=X.test.concat, y=as.matrix(y.test), D=NULL, lambda=lambda.opt.lasso[1], type="deviance")$perf
+lambda.opt.ridge[1] <- lglmnet_ridge$lambda.min
+deviance.ridge[1] <- istacox.predict(model=lglmnet_ridge$glmnet.fit$beta[, lambda.opt.ridge[1]], x=X.test.concat, y=as.matrix(y.test), D=NULL, lambda=lambda.opt.ridge[1], type="deviance")$perf
+lambda.opt.en[1] <- lglmnet_en$lambda.min
+deviance.en[1] <- istacox.predict(model=lglmnet_en$glmnet.fit$beta[, lambda.opt.en[1]], x=X.test.concat, y=as.matrix(y.test), D=NULL, lambda=lambda.opt.en[1], type="deviance")$perf
+
+
+### pronostic score
+pi.lasso[1] <- istacox.predict(model=lglmnet_lasso$glmnet.fit$beta[, lambda.opt.lasso[1]], x=X.test.concat, y=as.matrix(y.test), D=NULL, lambda=lambda.opt.lasso[1], type="pi")$perf
+pi.ridge[1] <- istacox.predict(model=lglmnet_ridge$glmnet.fit$beta[, lambda.opt.ridge[1]], x=X.test.concat, y=as.matrix(y.test), D=NULL, lambda=lambda.opt.ridge[1], type="pi")$perf
+pi.en[1] <- istacox.predict(model=lglmnet_en$glmnet.fit$beta[, lambda.opt.en[1]], x=X.test.concat, y=as.matrix(y.test), D=NULL, lambda=lambda.opt.en[1], type="pi")$perf
+
 # per block
 lglmnet_cv.perblock <- y.chapo.perblock <- NULL
 for (j in 1:B) {
-  lglmnet_cv.perblock[[j]] <- cv.glmnet(x = X.train[[j]], y = y.train, family=family, alpha = 0, 
-                                          type.measure=type.measure)
-  attach(what=as.data.frame(X.train[[j]]))
-  y.pred <- predict(lglmnet_cv.perblock[[j]], newx=X.test[[j]], s="lambda.min")
-  detach(name=as.data.frame(X.train[[j]]))
-  pred.score.perblock[1, j] <- multiblox.score(as.numeric(y.pred), as.matrix(y.test), metric=outer_cv_metric)$perf
-  lambda.opt.perblock[1, j] <- lglmnet_cv.perblock[[j]]$lambda.min
+  lglmnet_lasso.perblock[[j]] <- cv.glmnet(x = X.train[[j]], y = y.train, family=family, alpha = 0, 
+                                          type.measure=type.measure, grouped=TRUE)
+  lglmnet_ridge.perblock[[j]] <- cv.glmnet(x = X.train[[j]], y = y.train, family=family, alpha = 1, 
+                                           type.measure=type.measure, grouped=TRUE)
+  lglmnet_en.perblock[[j]] <- cv.glmnet(x = X.train[[j]], y = y.train, family=family,
+                                           type.measure=type.measure, grouped=TRUE)
+#   attach(what=as.data.frame(X.train[[j]]))
+#   y.pred.lasso <- predict(lglmnet_lasso.perblock[[j]], newx=X.test[[j]], s="lambda.min")
+#   y.pred.ridge <- predict(lglmnet_ridge.perblock[[j]], newx=X.test[[j]], s="lambda.min")
+#   y.pred.en <- predict(lglmnet_en.perblock[[j]], newx=X.test[[j]], s="lambda.min")
+  #detach(name=as.data.frame(X.train[[j]]))
+  lambda.opt.lasso.perblock[1, j] <- lglmnet_lasso.perblock[[j]]$lambda.min
+  lambda.opt.ridge.perblock[1, j] <- lglmnet_ridge.perblock[[j]]$lambda.min
+  lambda.opt.en.perblock[1, j] <- lglmnet_en.perblock[[j]]$lambda.min
+  
+  deviance.lasso.perblock[1, j] <- istacox.predict(model=lglmnet_lasso.perblock[[j]]$glmnet.fit$beta[, lambda.opt.lasso.perblock[1, j]], x=X.test[[j]], y=as.matrix(y.test), D=NULL, lambda=lambda.opt.lasso.perblock[1, j], type="deviance")$perf
+  deviance.ridge.perblock[1, j] <- istacox.predict(model=lglmnet_ridge.perblock[[j]]$glmnet.fit$beta[, lambda.opt.ridge.perblock[1, j]], x=X.test[[j]], y=as.matrix(y.test), D=NULL, lambda=lambda.opt.ridge.perblock[1, j], type="deviance")$perf
+  deviance.en.perblock[1, j] <- istacox.predict(model=lglmnet_en.perblock[[j]]$glmnet.fit$beta[, lambda.opt.en.perblock[1, j]], x=X.test[[j]], y=as.matrix(y.test), D=NULL, lambda=lambda.opt.en.perblock[1, j], type="deviance")$perf
+  pi.lasso.perblock[1, j] <- istacox.predict(model=lglmnet_lasso.perblock[[j]]$glmnet.fit$beta[, lambda.opt.lasso.perblock[1, j]], x=X.test[[j]], y=as.matrix(y.test), D=NULL, lambda=lambda.opt.lasso.perblock[1, j], type="pi")$perf
+  pi.ridge.perblock[1, j] <- istacox.predict(model=lglmnet_ridge.perblock[[j]]$glmnet.fit$beta[, lambda.opt.ridge.perblock[1, j]], x=X.test[[j]], y=as.matrix(y.test), D=NULL, lambda=lambda.opt.ridge.perblock[1, j], type="pi")$perf
+  pi.en.perblock[1, j] <- istacox.predict(model=lglmnet_en.perblock[[j]]$glmnet.fit$beta[, lambda.opt.en.perblock[1, j]], x=X.test[[j]], y=as.matrix(y.test), D=NULL, lambda=lambda.opt.en.perblock[1, j], type="pi")$perf
+  
 }
 
-print(pred.score.concat)
-print(pred.score.perblock)
+print(paste("deviance LASSO concat : ", deviance.lasso, sep=""))
+print(paste("deviance LASSO per block  : ", deviance.lasso.perblock, sep=""))
+print(paste("deviance RIDGE concat : ", deviance.ridge, sep=""))
+print(paste("deviance RIDGE per block  : ", deviance.ridge.perblock, sep=""))
+print(paste("deviance EN concat : ", deviance.en, sep=""))
+print(paste("deviance EN per block  : ", deviance.en.perblock, sep=""))
 
-save(pred.score.concat, pred.score.perblock, lambda.opt, lambda.opt.perblock, B, file=outputfile)
+print(paste("Prognostic Index LASSO concat : ", pi.lasso, sep=""))
+print(paste("Prognostic Index LASSO per block  : ", pi.lasso.perblock, sep=""))
+print(paste("Prognostic Index RIDGE concat : ", pi.ridge, sep=""))
+print(paste("Prognostic Index RIDGE per block  : ", pi.ridge.perblock, sep=""))
+print(paste("Prognostic Index EN concat : ", pi.en, sep=""))
+print(paste("Prognostic Index EN per block  : ", pi.en.perblock, sep=""))
+
+save(deviance.lasso, deviance.ridge, deviance.en, pi.lasso, pi.ridge, pi.en, 
+     deviance.lasso.perblock, deviance.ridge.perblock, deviance.en.perblock, pi.lasso.perblock, pi.ridge.perblock, pi.en.perblock, 
+     lambda.opt.lasso, lambda.opt.lasso.perblock, lambda.opt.ridge, lambda.opt.ridge.perblock, 
+     lambda.opt.en, lambda.opt.en.perblock, B, file=outputfile)
 cat("Writing", outputfile, "\n")

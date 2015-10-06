@@ -9,11 +9,8 @@ generate_multiblock_survival_simu_data <- function(n=n, p=p, B=B, p_frac=rep(0.2
   ds <- generate.survival.data(gene.nb = ff, tot.genes = pp, correlation = corr,
                                  sample.nb = n, beta.init = 1.5, shape = 1, scale = 1)
   
-  ### divide the super block into B blocks
-#   ind1 <- 1
-#   ind2 <- p[1]*p_frac[1]
-#   ind3 <- ff+1
-#   ind4 <- ff+p[1](1-p_frac[1])
+  ### divide the super block into B blocks and allocate the variables among the blocks
+  ### meaningful variables are at the beginning of the each block.
   var <- rep(1:B, p*p_frac)
   no_var <- rep(1:B, p-p*p_frac)
   

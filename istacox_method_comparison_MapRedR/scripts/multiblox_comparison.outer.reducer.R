@@ -1,7 +1,7 @@
 # reducer for outter CV in multiblox comparison
 args <- commandArgs(trailingOnly = TRUE)
 
-glm_red_file_pattern <- args[1]
+coxnet_red_file_pattern <- args[1]
 red_file_pattern <- args[2]
 nf <- strtoi(args[3])
 output_file <- args[4]
@@ -13,24 +13,20 @@ for (d in 2:(length(sp[[1]])-1)) {
 }
 pathtofile <- paste(pathtofile, "", sep="/")
 
-load(paste(glm_red_file_pattern, 1,".Rdata", sep="")) # on load le 1er fichier juste pour récupérer B
-B = ncol(pred.score.perblock)
-glm.global.pred.score <- matrix(NA, nrow=nf, ncol=B)
-labels <- "concat"
-glm.pred.score.concat <- rep(NA, nf)
-glm.lambda.opt <- NULL
-glm.lambda.perblock <- matrix(NA, nrow=nf, ncol=B)
+load(paste(coxnet_red_file_pattern, 1,".Rdata", sep="")) # on load le 1er fichier juste pour récupérer B
+deviance.coxnet <- matrix(NA, nrow=nf, ncol=ncol(global.deviance.coxnet))
+pi.coxnet <- matrix(NA, nrow=nf, ncol=ncol(global.pi.coxnet))
+coxnet.lambda.opt <- NULL
+coxnet.lambda.perblock <- matrix(NA, nrow=nf, ncol=3*B)
 for (i in 1:nf) {
-  load(paste(glm_red_file_pattern, i,".Rdata", sep=""))
-  glm.pred.score.concat[i] <- pred.score.concat 
-  glm.lambda.opt[[i]] <- lambda.opt
-  glm.lambda.perblock[i, ] <- lambda.opt.perblock
-  for (j in 1:B) {
-    glm.global.pred.score[i, j] = pred.score.perblock[1, j]
-  }
-}
-for (j in B:1) {
-  labels <- c(paste("block", j , sep=" "), labels) ## chaque bloc + concat
+  ### global.deviance.coxnet, global.pi.coxnet, lambda.opt.lasso, lambda.opt.lasso.perblock, 
+  ### lambda.opt.ridge, lambda.opt.ridge.perblock, 
+  ### lambda.opt.en, lambda.opt.en.perblock, B,
+  load(paste(coxnet_red_file_pattern, i,".Rdata", sep=""))
+  deviance.coxnet[i, ] <- global.deviance.coxnet
+  pi.coxnet[i, ] <- global.pi.coxnet
+  coxnet.lambda.opt[[i]] <- cbind(lambda.opt.lasso, lambda.opt.ridge, lambda.opt.en)
+  coxnet.lambda.perblock[i, ] <- cbind(lambda.opt.lasso.perblock, lambda.opt.ridge.perblock, lambda.opt.en.perblock)
 }
 
 designs <- c("concatenated", "hierarchical", "complete")
@@ -40,17 +36,17 @@ global.pred.score <- matrix(NA, nrow=nf, ncol=length(designs)+B)
 
 for (cpt in 1:length(designs)) {
   if (designs[cpt] == "concatenated"){
-    global.pred.score[, B+cpt] <- glm.pred.score.concat
+    global.pred.score[, B+cpt] <- coxnet.pred.score.concat
     cat("Optimal lambdas for ", designs[cpt], ":\n     \t", "concat\t\t", sep="")
     for (i in 1:B) {
       cat("Block", i, "\t")
       labels <- c(paste("block", (B - i) + 1, sep=" "), labels)
     }
     for (i in 1:nf) {
-      cat(paste("\n[", i, "]\t", sep="") , glm.lambda.opt[[i]], "\t")
+      cat(paste("\n[", i, "]\t", sep="") , coxnet.lambda.opt[[i]], "\t")
       for (j in 1:B) {
-        global.pred.score[i, j] = glm.global.pred.score[i, j]
-        cat(glm.lambda.perblock[i, j], "\t")
+        global.pred.score[i, j] = coxnet.global.pred.score[i, j]
+        cat(coxnet.lambda.perblock[i, j], "\t")
       }
     }
     cat("\n\n", sep="")

@@ -1,8 +1,8 @@
-##################################################
-##   A multiblock approach to Cox regression   ###
-###     Comparison with glmnet                  ##
-###           --  simulated data  --           ###
-##################################################
+############################################################################################
+##   A multiblock approach to Cox regression for both designs hierarchical and complete  ###
+###     Comparison with coxnet for ridge, lasso and elastic net shrinkage methods         ##
+###                                   --  simulated data  --                             ###
+############################################################################################
 ### call
 # Rscript --vanilla main_generate_survival_data_chunks.R data.local.survival_2B_CGH_n64.json cv.scheme.local.survival_CGH_2B.json
 # Rscript --vanilla main_multiblox_comparison.R data.local.survival_2B_CGH_n64.json method.multiblox.comparison.json | grep Rscript > cmd.comparison.n64.log
@@ -37,7 +37,7 @@ method.cfg <- fromJSON(paste(readLines(method_json_file), collapse=""))
 pathtowritefile <- data.cfg$pathtowritefile
 pathtoscript <- method.cfg$pathtoscript
 # source required scripts
-sources <- c("lambda.tune.cv.R", "functions.R", "make.lambda.grid.R", "generate_learning_sets.R")
+sources <- c("istacox.lambda.tune.R", "functions.R", "make.lambda.grid.R", "generate_learning_sets.R")
 for(s in sources) { source(paste(pathtoscript, s, sep="")) }
 
 # method
@@ -54,7 +54,7 @@ cv_metric <- method.cfg$cv_metric
 inner_cv_method <- method.cfg$inner_cv_method
 inner_cv_metric <- method.cfg$inner_cv_metric
 
-glm_res_file <- paste(pathtowritefile, "glmnet_cox_red_res_",sep="")
+glm_res_file <- paste(pathtowritefile, "coxnet_red_res_",sep="")
 scale <- T
 
 # Selects data source and reads corresponding parameters
@@ -73,7 +73,7 @@ save(parameters.grid, file=grid.file)
 
 set.seed(42)
 designs <- c("hierarchical", "complete")
-do_glmnet <- TRUE #### on teste d'abord multiblox seul, puis on comparera avec glmnet
+do_glmnet <- TRUE
 inner_cv_seed <- 4257
 
 #########################################################################

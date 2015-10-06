@@ -1,4 +1,4 @@
-istacox.predict <- function(model, x, y, D, lambda, type=c("spll", "deviance", "pi")){
+istacox.predict <- function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
   #   model list of B beta estimates from the train set, 
   #   x list of B matrices of covariates of the test set, 
   #   y list of B outcomes of the test set,  
@@ -19,13 +19,15 @@ istacox.predict <- function(model, x, y, D, lambda, type=c("spll", "deviance", "
   
   null_model <- list()
   null_model[["beta"]] <- rep(0, length(model[["beta"]]))
-   
-  total_link <- NULL
-  for (b in 1:B){
-    link[b] <- link(X=x, D=D, b=b, beta.init=model)
-  }
-  total_link <- sum(link)
   
+  total_link <- 0
+  if (!is.null(D)){
+    for (b in 1:B){
+      link[b] <- link(X=x, D=D, b=b, beta.init=model)
+    }
+    total_link <- sum(link)
+  }
+    
   if(type=="spll"){
     print("sparse loglik")
     for (b in 1:B){
