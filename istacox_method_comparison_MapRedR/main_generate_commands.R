@@ -36,7 +36,7 @@ model.custom.param.map <- method.cfg$model.custom.param.map
 pathtowritefile <- data.cfg$pathtowritefile
 pathtoscript <- cv.cfg$pathtoscript
 # source required scripts
-sources <- c("istacox.lambda.tune.R", 
+sources <- c("multiblox.lambda.tune.R", 
              "functions.R")
 for(s in sources) { source(paste(pathtoscript, s, sep="")) }
 

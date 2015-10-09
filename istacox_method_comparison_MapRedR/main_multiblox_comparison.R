@@ -1,5 +1,5 @@
 ############################################################################################
-##   A multiblock approach to Cox regression for both designs hierarchical and complete  ###
+##   A multiblock approach to coxnet regression for both designs hierarchical and complete  ###
 ###     Comparison with coxnet for ridge, lasso and elastic net shrinkage methods         ##
 ###                                   --  simulated data  --                             ###
 ############################################################################################
@@ -21,6 +21,8 @@ library(CMA)
 library(rjson)
 library(glmnet)
 
+print("BOnjour !!")
+
 #########################################################################
 ###
 ###  reading JSON configuration file, parameters setting and data loading
@@ -37,13 +39,17 @@ method.cfg <- fromJSON(paste(readLines(method_json_file), collapse=""))
 pathtowritefile <- data.cfg$pathtowritefile
 pathtoscript <- method.cfg$pathtoscript
 # source required scripts
-sources <- c("istacox.lambda.tune.R", "functions.R", "make.lambda.grid.R", "generate_learning_sets.R")
+sources <- c("multiblox.lambda.tune.R", "functions.R", "make.lambda.grid.R", "generate_learning_sets.R")
 for(s in sources) { source(paste(pathtoscript, s, sep="")) }
 
 # method
 model.name <- method.cfg$model.name
 model.mapper <- method.cfg$model.mapper
 model.inner.reducer <- method.cfg$model.inner.reducer
+print("voici les parametres : ")
+print(model.name)
+print(model.mapper)
+print(model.inner.reducer)
 
 # CV parameters
 nf <- method.cfg$nf   # nb of folds for outer CV
@@ -54,9 +60,10 @@ cv_metric <- method.cfg$cv_metric
 inner_cv_method <- method.cfg$inner_cv_method
 inner_cv_metric <- method.cfg$inner_cv_metric
 
-glm_res_file <- paste(pathtowritefile, "coxnet_red_res_",sep="")
+coxnet_res_file <- paste(pathtowritefile, "coxnet_red_res_",sep="")
 scale <- T
 
+# data
 # Selects data source and reads corresponding parameters
 source(data.cfg$data_source)
 data <- read.data(cfg=data.cfg)
@@ -66,14 +73,14 @@ B <- length(X)
 my_var_names <- data$my_var_names
 
 # construct the parameters grid
-parameters.grid <- make.lambda.grid(X, l.min=rep(5, B), path="smart")
+parameters.grid <- make.lambda.grid(X, path="smart")
 # print(lambda.grid)
 grid.file <- paste(pathtowritefile, "grid.",  model.name, ".Rdata", sep="")
 save(parameters.grid, file=grid.file)
 
 set.seed(42)
 designs <- c("hierarchical", "complete")
-do_glmnet <- TRUE
+do_coxnet <- TRUE
 inner_cv_seed <- 4257
 
 #########################################################################
@@ -99,15 +106,15 @@ if (inner_cv_method == "LOOCV") { nfi <- ncol(trainmat.outer) }
 X.concat <- as.data.frame(Reduce("cbind", X))
 colnames(X.concat) <- unlist(my_var_names)
 
-# Glmnet call for COXNET !!
-if (do_glmnet) {
+# glmnet call for coxnet !!
+if (do_coxnet) {
   for (i in 1:nrow(trainmat.outer)){
-    cat(paste("Rscript",  paste(pathtoscript, "glmnet_cox.mapper.R", sep=""), 
+    cat(paste("Rscript",  paste(pathtoscript, "coxnet.mapper.R", sep=""), 
             paste(pathtowritefile, "fold_data_",  i, ".Rdata", sep=""), 
-            paste(glm_res_file, i, ".Rdata", sep=""), nf, cv_method, cv_metric, "\n",sep=" ")) 
+            paste(coxnet_res_file, i, ".Rdata", sep=""), nf, cv_method, cv_metric, "\n",sep=" ")) 
   }
-#   cat(paste("Rscript",  paste(pathtoscript, "glmnet_cox.outer.reducer.R", sep=""), 
-#              glm_res_file, nf, paste(pathtowritefile, "glmnet_cox_res.Rdata", sep=""), "\n",sep=" ")) 
+#   cat(paste("Rscript",  paste(pathtoscript, "coxnet.outer.reducer.R", sep=""), 
+#              coxnet_res_file, nf, paste(pathtowritefile, "coxnet_res.Rdata", sep=""), "\n",sep=" ")) 
 }
 
 ### Cross validation loop
@@ -128,7 +135,7 @@ for (i in 1:nrow(trainmat.outer)){
   y.test <- y[-ind,]
   # scaling
   if (scale) {
-    # Comment: concat scaled in map_glmnet.R
+    # Comment: concat scaled in coxnet.mapper.R
     X.train <- lapply(X.train, function(mm) scale2(mm))
     scl_fun <- function(data, scaled) {
       scale(data, center = attr(scaled, "scaled:center"),
@@ -140,29 +147,33 @@ for (i in 1:nrow(trainmat.outer)){
   trainmat <- generate.learning.sets(N.train, y.train[, 2], method=inner_cv_method, nf.cv=nfi, inner_cv_seed=inner_cv_seed)
   
   # save data for the fold
+  colnames(y.train) <- colnames(y.test) <- c("time", "status")
   fold_file = paste(pathtowritefile, "fold_data_", i, ".Rdata", sep="")
   save(X.train, y.train, X.test, y.test, X.train.concat, X.test.concat, cv_method, cv_metric, 
        scale, trainmat, parameters.grid, B, file=fold_file)
   
   
   outer_red_pattern <- paste(pathtowritefile, model.name, ".red_res_" , sep="")
+  
   # generate multiblox commands for inner folds 
-  # no inner fold for glmnet because it has its own model selection procedure
-  for (model in designs) {    ### pour chaque design hierarchical and complete
+  # no inner fold for coxnet because it has its own model selection procedure
+  for (des in designs) {    ### pour chaque design hierarchical and complete
+    print(des)
     ### Cross validation loop
       # data for the fold
-      outer_res_file = paste(outer_red_pattern, model, i, ".Rdata", sep="")
+      outer_res_file = paste(outer_red_pattern, des, i, ".Rdata", sep="")
         # generate inner CV commands
-        map_file_pattern = paste(pathtowritefile, model,".map_res_", i, "_", sep="")
+        map_file_pattern = paste(pathtowritefile, des,".map_res_", i, "_", sep="")
         for (k in 1:nfi){
           map_output_file = paste(map_file_pattern, k, ".Rdata", sep="")
           ### commandes de mapper multiblox
-          cat(paste("Rscript", model.mapper, fold_file, map_output_file, grid.file, k, i,
-                    inner_cv_method, inner_cv_metric, model, pathtoscript, "\n",sep=" "))
+          cat(paste("Rscript", paste(pathtoscript, model.mapper, sep=""), fold_file, 
+                    map_output_file, grid.file, k, i,
+                    inner_cv_method, inner_cv_metric, des, pathtoscript, "\n",sep=" "))
         }
         ### commandes inner reducer multiblox
-        cat(paste("Rscript",  model.inner.reducer, fold_file, map_file_pattern, outer_res_file,
-                  i, nfi, model, "\n",sep=" "))
+        cat(paste("Rscript", paste(pathtoscript, model.inner.reducer, sep=""), fold_file, map_file_pattern, outer_res_file,
+                  i, nfi, des, "\n",sep=" "))
   }
 }
 
@@ -170,6 +181,6 @@ for (i in 1:nrow(trainmat.outer)){
 red_pattern <- paste(pathtowritefile, "multiblox.red_res_" , sep="")
 res_file <- paste(pathtowritefile, "final_res.Rdata" , sep="") 
 ### commandes outer reducer qui calcule les stats pour chaque méthode.
-cat(paste("Rscript", paste(pathtoscript, "multiblox_comparison.outer.reducer.R", sep=""), glm_res_file, red_pattern, nf, 
+cat(paste("Rscript", paste(pathtoscript, "multiblox_comparison.outer.reducer.R", sep=""), coxnet_res_file, red_pattern, nf, 
           res_file, "\n",sep=" "))
 

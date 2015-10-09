@@ -1,4 +1,4 @@
-istacox.lambda.tune <-
+multiblox.lambda.tune <-
   function(X, y, D, trainmat, i, outer_it, lambda.grid, scale=T, method="CV", metric="spll", adaptative=TRUE, fast=TRUE){
     # x is a list of B (p_k by n) matrices of predictors
     # y dataframe of survival times and censoring, 
@@ -31,8 +31,7 @@ istacox.lambda.tune <-
   }else{
     N <- nrow(X) # nb of individuals
   }
-    
-      N <- nrow(X[[1]]) # nb of individuals
+print(D)
       
       beta.train <- eta.train <- eta.test <- NULL
       pred.score <- res <- model <- cox.model <- cv <- NULL
@@ -40,7 +39,7 @@ istacox.lambda.tune <-
       ### Beta initialization without any intercept
       beta0 <- NULL
       for (b in 1:B){
-        beta0[[b]] <- matrix(2, nrow=(ncol(X[[b]])), ncol=1)
+        beta0[[b]] <- matrix(0, nrow=(ncol(X[[b]])), ncol=1)
       }
       
       ##1) get train and test
@@ -68,6 +67,11 @@ istacox.lambda.tune <-
       x.o <- list()
       x.o <- lapply(X.train, function(b) b[order(y.train[, 1]), ])
       y.o <- as.data.frame(y.train[order(y.train[, 1]), ])
+      colnames(y.o) <- c("time", "status")
+#       print(length(x.o))
+#       print(dim(x.o[[1]]))
+#       print(dim(x.o[[2]]))
+#       print(dim(x.o[[3]]))
       
       # uncensored patients
       I.train <- which(y.o$status==1)
@@ -86,11 +90,11 @@ istacox.lambda.tune <-
   
       ##2) Estimating the betas on the training set x, I, R, alpha, gamma, eps = 0.001, kmax = 10000
       print(adaptative)
-      res[[l]]<- relax_multiblox(X=x.o, I.train, R.train, D=D, lambda=lambda.grid[l], kmax=1000, ada=as.logical(adaptative), fast=as.logical(fast), beta.init=beta0)
+      res[[l]]<- relax_multiblox(x=x.o, I.train, R.train, D=D, lambda=lambda.grid[l,], max.iter=1000, ada=as.logical(adaptative), fast=as.logical(fast), beta.init=beta0)
       beta.train[[l]] <- res[[l]]$beta
 
       ### predict
-      pred <- istacox.predict(model=beta.train[[l]], x=x.o, y=y.o, lambda=lambda.grid[l], type=metric)
+      pred <- istacox.predict(model=beta.train[[l]], D=D, x=x.o, y=y.o, lambda=lambda.grid[l,], type=metric)
       
       ##5) get and accumulate the score
       ## formultiblox score is the partial loglikelihood for the training test

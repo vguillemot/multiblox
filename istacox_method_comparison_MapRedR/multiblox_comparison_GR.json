@@ -1,0 +1,16 @@
+{
+  "model.name": "multiblox_comparison",
+  "model.selection": true,
+  "make.grid.func": "make.lambda.grid.R",
+  "model.mapper": "multiblox_comparison.mapper.R",
+  "pathtoscript": "/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/",
+  "model.outer.reducer": "multiblox_comparison.outer.reducer.R",
+  "model.inner.reducer": "multiblox_comparison.inner.reducer.R",
+  "model.custom.param.ired": "complete",
+  "cv_method": "CV",
+  "cv_metric": "deviance",
+  "inner_cv_method": "CV",
+  "inner_cv_metric": "spll",
+  "nfi": 5,
+  "nf": 5
+}

@@ -2,19 +2,20 @@
 # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
 # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
 # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
-source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/istacox.score.R")
+source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.R")
+source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
+source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.score.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 
-# common parameters from command line : Rscript model.inner.reducer fold_file map_file_pattern outer_res_file i nfi cv_metric
+# common parameters from command line : Rscript model.inner.reducer fold_file map_file_pattern outer_res_file i nfi cv_metric design
 input_file_fold <- args[1]
 input_file_pattern <- args[2]
 outputfile <- args[3]
 outer_fold <- strtoi(args[4])
 n_inner_folds <- strtoi(args[5])
 cv_metric <- args[6]
+design <- args[7]
 # custom parameters
 adaptative <- args[7]
 fast <- args[8]
@@ -76,11 +77,17 @@ for(i in 1:n_inner_folds) {
 }
 print(CV)
 
-### choix du modele
+if (design == "hierarchical") { 
+  D <- matrix(0, ncol=B, nrow=B) 
+} else if (design == "complete") { 
+  D <- matrix(1, ncol=B, nrow=B) - diag(B)
+}
+
+### model selection one lambda parameter for each block
 lambda.opt <- unlist(lambda.grid[which.max(rowSums(CV, na.rm=T))])
 
 ### refit
-model.refit <- istacox(X=x.o, I=I.train, R=R.train, alpha=0.5*lambda.opt, gamma=0.25*lambda.opt, kmax=1000, epsilon=1e-4, 
+model.refit <- relax_multiblox(X=x.o, I=I.train, R=R.train, D, lambda=lambda.opt, max.iter=1000, epsilon=1e-4, beta.init=NULL
                        fast=as.logical(fast), ada=as.logical(adaptative))
 cur.beta.train <- model.refit[["beta"]]
 
@@ -95,8 +102,8 @@ model_dev <- dev[["est"]]
 model_pi <- pi[["est"]]
 
 ##4) SCORE: get and accumulate the score
-dev.score <- istacox.score(y.test=as.matrix(y.test), y.hat=model_dev)[["perf"]]
-pi.score <- istacox.score(y.test=as.matrix(y.test), y.hat=model_pi)[["perf"]]
+dev.score <- istacox.score(y.test=model_dev, y.hat=model_dev)[["perf"]]
+pi.score <- istacox.score(y.test=model_pi, y.hat=model_pi)[["perf"]]
 
-save(dev.score, pi.score, lambda.opt, model_dev, model_pi, model.refit, file=outputfile)
+save(dev.score, pi.score, lambda.opt, model.refit, design, file=outputfile)
 cat("Writing", outputfile, "\n")

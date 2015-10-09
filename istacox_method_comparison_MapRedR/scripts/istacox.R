@@ -8,9 +8,18 @@
 
 
 grad <- function(X, beta, I, R, alpha, link) {
-  wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))),
+#   print(X)
+#   print(beta)
+#   print(X[1,]%*%beta)
+#   print(I)
+  # print(R)
+  # wij <- mapply( function(i, j) t(exp(matrix(X[j, ], nrow=1)%*%matrix(beta, ncol=1)) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R, SIMPLIFY = FALSE)
+  # wij <- mapply( function(i, j) exp(beta%*%X[j,] / sum( exp(beta%*%X[R[[sprintf("R%i", i)]], ]))), I, R, SIMPLIFY = FALSE)
+  wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
+#   print(dim(wij[[1]]))
+#   print(dim(as.matrix(X[R[[1]], ])))
   names(wij) <- names(R)
-  xbar <- t(sapply(names(R), function(r) wij[[r]]%*%X[R[[r]], ]) )
+  xbar <- t(sapply(names(R), function(r) as.matrix(wij[[r]])%*%as.matrix(X[R[[r]], ])) )
   grad <- - colSums( X[I, ] - xbar ) + (1-alpha)*beta - link
 }
 
@@ -19,7 +28,7 @@ neg_step <- function(X, t, beta, alpha, g){
 }
 
 R_ell <- function(X, beta, I, R, alpha){
-  truc <- mapply( function(i, j) {X[j, ]%*%beta -log(sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta)))}, I, R, SIMPLIFY = F)
+  truc <- mapply( function(i, j) {matrix(X[j, ], nrow=1)%*%matrix(beta, ncol=1) -log(sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta)))}, I, R, SIMPLIFY = F)
   - sum(unlist(truc)) + (1-alpha)/2 * norm.l2.2(beta)
 }
 
@@ -56,7 +65,7 @@ fistacox_step_line_search <- function(X, u, I, R, t=10, tau=0.95, alpha, link, k
   return(t)
 }
 
-istacox <- function(X, I, R, D, b, alpha, kmax=1000, epsilon=1e-6, 
+istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4, 
                     fast=FALSE, ada=FALSE, link, beta_init) {
   ### X is now a list of B matrices (blocks)
   ### b is the block to be treated by istacox
@@ -65,21 +74,18 @@ istacox <- function(X, I, R, D, b, alpha, kmax=1000, epsilon=1e-6,
   ### R list of sets of individuals at risk at each non censored ranked time
   ### alpha L1-norm shrinkage parameter
     
-  B <- length(X)
-  p <- lapply(X, ncol)
-  n <- nrow(X[[b]])
+  p <- ncol(X)
+  n <- nrow(X)
   
   if (!is.null(beta_init)){
     betaold <- beta_init
   } else {
-    for (c in B){
-      betaold[[c]] <- rnorm(p[[c]]) 
-    }
+    betaold <- rnorm(p) 
   }
   
-  t <- 1/max(eigen(t(X[[b]])%*%X[[b]])$values)
-  
-  betanew <- prox(betaold - t*grad(X[[b]], betaold, I, R, alpha, link),t,alpha)
+  t <- 1/max(eigen(t(X)%*%X)$values)
+  # print("1er grad")
+  betanew <- prox(betaold - t*grad(X, betaold, I, R, alpha, link),t,alpha)
   
   for (k in 2:kmax) {
     if (fast) {
@@ -89,13 +95,17 @@ istacox <- function(X, I, R, D, b, alpha, kmax=1000, epsilon=1e-6,
     }
     if (ada) {
       if (fast) {
-        t <- fistacox_step_line_search(X[[b]], u, I, R, t, tau=0.95, alpha, link)
+        t <- fistacox_step_line_search(X, u, I, R, t, tau=0.95, alpha, link)
       } else {
-        t <- istacox_step_line_search(X[[b]], betaold, I, R, t, tau=0.95, alpha, link)
+        t <- istacox_step_line_search(X, betaold, I, R, t, tau=0.95, alpha, link)
       }
     }
     betaold <- betanew
-    betanew <- prox(u - t*grad(X[[b]], u, I, R, alpha, link), t, alpha)
+    betanew <- prox(u - t*grad(X, u, I, R, alpha, link), t, alpha)
+#     print("arret ?")
+#     print(k)
+# print(betaold)
+# print(betanew)
     if (sum((betanew-betaold)**2) < epsilon ) break
   }
   return(list(beta=betanew, k=k))

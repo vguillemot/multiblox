@@ -1,9 +1,0 @@
-{
-  "pathtowritefile": "/home/cathy/Projets/these/multiblox/istaCox_MapRedR_results/test/",
-  "data_source": "/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/generate_monoblock_survival_data.R",
-  "simu": {
-    "n": 200,
-    "p": 200,
-    "p.frac" : 1
-  }
-}

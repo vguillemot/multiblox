@@ -1,0 +1,11 @@
+{
+  "pathtowritefile": "/home/philippe/Projets/these/multiblox/multiblox_methods_comparison_MapRedR_results/test/",
+  "data_source": "/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/generate_multiblock_survival_simu_data.R",
+  "simu": {
+    "B": 3,
+    "n": 200,
+    "p": [10, 20, 30],
+    "p.frac" : [0.5, 0.2, 0.3]
+  }
+}
+

@@ -1,4 +1,4 @@
-relax_multiblox <- function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL){
+relax_multiblox <- function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL, fast=fast, ada=ada){
   ### Block relaxation for multiblox
   
     # x is a list of B (p_k by n) matrices of predictors
@@ -10,8 +10,8 @@ relax_multiblox <- function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 1000
     # max.iter is an integer corresponding to the maximum nb of ALS iterations
     # beta.init is a p by 1 vector of the initial values of beta
     
-    source("istacox.R")
-    source("link.R")
+    source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.R")
+    source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
     
     B <- length(x) #number of blocks
     n <- nrow(x[[1]])
@@ -39,15 +39,19 @@ relax_multiblox <- function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 1000
     consec_max.iter <- 0
     beta_new <- beta
     
+    print(D)
+    
     for (iter in 1:max.iter){
       for (b in 1:B) {
-        
-        link <- link(X, D, b, beta)
-        istacox_res <- istacox(x=x, I=I, R=R, D=D, b=b, alpha=0.5*lambda, kmax=1000, epsilon=1e-6, 
-                           fast=FALSE, ada=FALSE, link=link, beta_init=beta)
+        print(paste("block : ", b))
+#         print(dim(x[[b]]))
+#         print(dim(beta[[b]]))
+        link <- link(x, D, b, beta)
+        istacox_res <- istacox(X=x[[b]], I=I, R=R, alpha=0.5*lambda, kmax=1000, epsilon=1e-4, 
+                           fast=fast, ada=ada, link=link, beta_init=beta[[b]])
         iter.inner <- iter.inner + istacox_res$k
-        print(iter)
-        print(iter.inner)
+        print(paste("relax iter : ", iter, sep=""))
+        print(paste("istacox iter : ", iter.inner, sep=""))
         if (max.iter.inner == istacox_res$k) {
           div.inner <- div.inner + 1
           consec_max.iter <- consec_max.iter + 1
@@ -55,8 +59,9 @@ relax_multiblox <- function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 1000
           consec_max.iter <- 0
         }
         #       beta_new <- lapply(NR_step$beta, beta_norm2)
-        beta_new <- istacox_res$beta
+        beta_new[[b]] <- istacox_res$beta
       }
+# print("un tour de block relaxation")
       d <- mapply("-", beta, beta_new, SIMPLIFY=FALSE)
       e <- sapply(d, base::norm, "f")
       if(max(e)<eps) break
@@ -66,6 +71,4 @@ relax_multiblox <- function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 1000
     #eta <- mapply(x, beta, FUN=function(a, b) a%*%b, SIMPLIFY=FALSE) ### bug 3 blocs
     print(paste("Block relaxation iter (inner - div): ", iter , "(", iter.inner, "-", div.inner, ")" ))
     return(list(beta = beta_new, convergence = unlist(e), niter=iter))
-  }
-  
 }

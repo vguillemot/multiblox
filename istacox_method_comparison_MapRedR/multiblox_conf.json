@@ -1,0 +1,10 @@
+{
+"model.name": "multiblox",
+"model.selection": true,
+"make.grid.func": "make.lambda.grid.R",
+"model.mapper": "map_multiblox.R",
+"model.custom.param.map": "FALSE FALSE /home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/",
+"model.outer.reducer": "reduce.outer.multiblox.R",
+"model.inner.reducer": "reduce.inner.multiblox.R",
+"model.custom.param.ired": "FALSE FALSE /home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/"
+}

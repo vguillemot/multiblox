@@ -8,58 +8,77 @@ istacox.predict <- function(model, x, y, D=NULL, lambda, type=c("spll", "devianc
   #   pi = prognostic index (cf Bovelstad 2007)
   
   library(survival)
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/partial.loglik.R")
-  source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/link.R")
+  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/sparse.partial.loglik.R")
+  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/partial.loglik.R")
+  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
   # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
   
   B <- length(x)
   
-  spll <- res <- NULL
+  spll <- res <- lk <- pll <- dev_null <- NULL
   
-  null_model <- list()
-  null_model[["beta"]] <- rep(0, length(model[["beta"]]))
+  null_model <- matrix(0, nrow=length(model), ncol=1)
   
   total_link <- 0
   if (!is.null(D)){
     for (b in 1:B){
-      link[b] <- link(X=x, D=D, b=b, beta.init=model)
+      lk[[b]] <- link(X=x, D=D, b=b, beta.init=model)
     }
-    total_link <- sum(link)
+    total_link <- sum(unlist(lk))
   }
     
   if(type=="spll"){
     print("sparse loglik")
-    for (b in 1:B){
-      spll[[b]] <- sparse.partial.loglik(model=model[[b]], newdata=x[[b]], newy=y, lambda=lambda[b])
+    if (!is.null(D)){
+      for (b in 1:B){
+        spll[[b]] <- sparse.partial.loglik(model=model[[b]], newdata=x[[b]], newy=y, lambda=lambda[b])
+      }
+      res <- sum(unlist(spll)) - total_link
+    } else {
+      spll <- sparse.partial.loglik(model=model, newdata=x, newy=y, lambda=lambda)
+      res <- spll
     }
-    res <- sum(unlist(spll)) - total_link
   } else if(type=="deviance"){
     print("deviance")
-    for (b in 1:B){
-#       pll[[b]] <- sparse.partial.loglik(model=model[[b]], newdata=x[[b]], newy=y, lambda=lambda[b])
-#       dev_null[[b]] <- sparse.partial.loglik(model=null_model, newdata=x[[b]], newy=y, lambda=lambda[b])
-      pll[[b]] <- partial.loglik(model=model[[b]], newdata=x[[b]], newy=y)
-      dev_null[[b]] <- partial.loglik(model=null_model, newdata=x[[b]], newy=y)
+    if (!is.null(D)){
+      # print("multiblox")
+      for (b in 1:B){
+#         print(model[[b]])
+#         print(x[[b]])
+        pll[[b]] <- partial.loglik(model=model[[b]], newdata=x[[b]], newy=y)
+        dev_null[[b]] <- partial.loglik(model=matrix(0, nrow = length(model[[b]]), ncol=1), newdata=x[[b]], newy=y)
+      }
+      total_pll <- sum(unlist(pll)) - total_link
+      # print(paste("Loglik du modele : ", total_pll, sep=""))
+      total_null <- sum(unlist(dev_null))
+      # print(paste("Loglik du modele nul : ", total_null, sep=""))
+      res <- -2*(total_pll - total_null)
+      # print(paste("Deviance du modele par rapport au modele mul : ", res, sep=""))
+    } else {
+      # print("coxnet")
+      pll <- partial.loglik(model=model, newdata=x, newy=y)
+      # print(paste("pll : ", pll, sep=""))
+      dev_null <- partial.loglik(model=matrix(0, nrow = length(model), ncol=1), newdata=x, newy=y)
+      # print(paste("pll_null : ", dev_null, sep=""))
+      res <- -2*(pll - dev_null)
+      # print(res)
     }
-    total_pll <- sum(unlist(pll)) - total_link
-    print(paste("Loglik du modele : ", total_pll, sep=""))
-    total_null <- sum(unlist(dev_null))
-    print(paste("Loglik du modele nul : ", total_null, sep=""))
-    res <- -2*(total_spll - total_null)
-    print(paste("Deviance du modele par rapport au modele mul : ", res, sep=""))
   } else if(type=="pi"){
     print("pronostic index")
-    for (b in 1:B){
-      dat[[b]] <- x[[b]]%*%model[[b]]
+    if (!is.null(D)){
+      for (b in 1:B){
+        dat[[b]] <- x[[b]]%*%model[[b]]
+      }
+      lp <- Reduce(cbind, x = dat)
+      fit <- lapply(coxph(Surv(y[, 1], y[,2])~lp))
+      res <- summary(fit)$logtest["pvalue"]
+    } else {
+      dat <- as.matrix(x)%*%as.matrix(model)
+      fit <- coxph(Surv(y[, 1], y[,2])~dat)
+      res <- summary(fit)$logtest["pvalue"]
     }
-    lp <- Reduce(cbind, x = dat)
-    fit <- lapply(coxph(Surv(y[, 1], y[,2])~lp)
-    res <- summary(fit)$logtest["pvalue"]
   } else {
     print("Sorry, this type of score is not yet implemented !")
   }
-
   return(list(est=res))
-  
 }

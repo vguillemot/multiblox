@@ -39,7 +39,7 @@ colnames(global.pi.coxnet) <- labels
 print(summary(global.deviance.coxnet))
 print(summary(global.pi.coxnet))
 
-pdf("coxnet_performances.pdf")
+pdf(paste(output_file, "coxnet_performances.pdf", sep="_"))
 boxplot(global.deviance.coxnet, main="Deviance for Coxnet models")
 boxplot(-log(global.pi.coxnet), main="Prognostic index for Coxnet models", ylab="-log(Pronostic Index)")
 dev.off()

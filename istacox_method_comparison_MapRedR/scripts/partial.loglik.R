@@ -7,7 +7,7 @@ partial.loglik <- function(model, newdata, newy){
   # newy : outcome from de the test set to compute I and R
   # lambda : sparsity parameter
   
-  beta <- model
+  beta <- matrix(model, ncol=1)
   ### Sets of patient at risk at Ti
   x.o <- newdata[order(newy[, 1]), ]
   y.o <- as.data.frame(newy[order(newy[, 1]), ])
@@ -21,9 +21,10 @@ partial.loglik <- function(model, newdata, newy){
   #print(R)
   #   print(dim(newdata))
   #   print(length(beta))
-  
-  #pll <- mapply( function(i, j) sum(newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", j)]], ]%*%beta) ))), I, R)
-  pll <- sum(mapply( function(i) newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", i)]], ]%*%beta) )), I))
+#   print(paste("beta : ", beta))
+#   print(paste("newdata : ", newdata[1,]))
+ # pll <- mapply( function(i, j) sum(newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", i)]], ]%*%beta) ))), I, R)
+  pll <- sum(mapply( function(i) {newdata[i, ]%*%beta - log(sum( exp(as.matrix(newdata[R[[sprintf("R%i", i)]], ])%*%beta) ))}, I))
     
   return(pll=pll)
 }
