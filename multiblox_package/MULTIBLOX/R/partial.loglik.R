@@ -1,7 +1,5 @@
-# source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/functions.R")
-# source("/home/philippe/github/multiblox/istacox_MapRedR/scripts/functions.R")
-
-partial.loglik <- function(model, newdata, newy){
+partial.loglik <-
+function(model, newdata, newy){
   # model : beta of the fitted model
   # newdata : data from de test set
   # newy : outcome from de the test set to compute I and R

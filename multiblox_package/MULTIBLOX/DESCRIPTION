@@ -1,0 +1,9 @@
+Package: MULTIBLOX
+Type: Package
+Title: Multiblock Analysis of Survival Data
+Version: 1.0
+Date: 2015-10-12
+Author: cathy Philippe and Vincent Guillemot
+Maintainer: Cathy Philippe <cathy.philippe@gustaveroussy.fr>
+Description: Multiblock analysis of Survival data based on Cox regression.
+License: GPL (>2)
