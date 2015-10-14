@@ -12,5 +12,5 @@ grad <- function(X, beta, I, R, alpha, link) {
   wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
   names(wij) <- names(R)
   xbar <- t(sapply(names(R), function(r) as.matrix(wij[[r]])%*%as.matrix(X[R[[r]], ])) )
-  grad <- - colSums( X[I, ] - xbar ) + (1-alpha)*beta - link
+  grad <- - colSums( X[I, ] - xbar ) + (alpha/2)*beta - link
 }
