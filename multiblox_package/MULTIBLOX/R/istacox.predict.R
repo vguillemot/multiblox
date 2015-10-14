@@ -1,18 +1,21 @@
+#' Predicts (sparse log-likelihood, prognostic index or deviance) from a model and test data.
+#' 
+#' @param model list of B beta estimates from the train set, 
+#' @param x list of B matrices of covariates of the test set, 
+#' @param y list of B outcomes of the test set,  
+#' @param D B by B matrix indicating the links between blocks
+#' @param spll = sparse partial loglikelihood
+#' @param deviance = related to the null model
+#' @param pi = prognostic index (cf Bovelstad 2007)
+#' @return the quality of the prediction specified by the user.
 istacox.predict <-
 function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
-  #   model list of B beta estimates from the train set, 
-  #   x list of B matrices of covariates of the test set, 
-  #   y list of B outcomes of the test set,  
-  #   D B by B matrix indicating the links between blocks
-  #   spll = sparse partial loglikelihood
-  #   deviance = related to the null model
-  #   pi = prognostic index (cf Bovelstad 2007)
-  
-  library(survival)
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/sparse.partial.loglik.R")
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/partial.loglik.R")
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
-  # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
+
+#   library(survival)
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/sparse.partial.loglik.R")
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/partial.loglik.R")
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
+#   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/sparse.partial.loglik.R")
   
   B <- length(x)
   

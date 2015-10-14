@@ -1,9 +1,11 @@
-link <-
-function(X, D, b, beta.init){
-  ### X a list of B matrices
-  ### D is a B by B binary design matrix describing connections between blocks
-  ### b is the block to be treated by istacox
-  ### beta list of B cox coefficient vectors
+#' Compute the link between blocks.
+#' 
+#' @param X a list of B matrices
+#' @param D is a B by B binary design matrix describing connections between blocks
+#' @param b is the block to be treated by istacox
+#' @param beta list of B cox coefficient vectors
+#' @return The sum of covariance between linked blocks
+link <- function(X, D, b, beta.init){
   
   B <- length(X)
   p <- lapply(X, ncol)

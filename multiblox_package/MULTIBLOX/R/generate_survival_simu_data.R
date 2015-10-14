@@ -1,30 +1,38 @@
+#' Generate multi-block survival simulated data.
+#' @param n total number of individuals.
+#' @param B number of non-CGH blocks.
+#' @param B.CGH number of CGH blocks.
+#' @param p vector of number of variables per block.
+#' @param n.expl vector of number of informative variables per block.
+#' @param noise_corr vector of correlation noise parameters per block.
+#' @param alpha ???
+#' @param seed random seed.
+#' @return Simulated data: X, y, names of the variables and hazard function.
+#' @examples 
+#' nf <- 10 # nb of folds for CV
+#' n <- nf*nf*2 #observations
+#' p <- c(40, 30) # c(40, 30, 50, 20, 30, 45) #nb of variables in each block
+#' noise_corr <- c(0.8, 0.5) # correlation between variables within each block
+#' B <- length(p) # number of blocks
+#' rho <- 0.7 # correlation parameter !!! choose carefully the rho's so that sigmaComponents is positive definite !!!
+#' alpha <- 0.1 or sqrt(2) # coefficient that moderates eta's part in the model
+#' B.CGH <- 1 # nb of CGH simulated blocks
+#' nb.expl <- 100 # nb of variables with information in each block
+#' library(multiblog) # for idn function
 generate_survival_simu_data <-
-function(n, B=2, B.CGH=1, rho=rep(0.7, B-1), p=rep(100, B), n.expl=rep(100, B), noise_corr=rep(0.5, B), alpha=0.1, seed=4257, pathtodata="./"){
-    ##########################################################
-    ###
-    ###   generate multi-block survival simulated data
-    ###
-    ##########################################################
-    #     nf <- 10 # nb of folds for CV
-    #     n <- nf*nf*2 #observations
-    #     p <- c(40, 30) # c(40, 30, 50, 20, 30, 45) #nb of variables in each block
-    #     noise_corr <- c(0.8, 0.5) # correlation between variables within each block
-    #     B <- length(p) # number of blocks
-    #     rho <- 0.7 # correlation parameter !!! choose carefully the rho's so that sigmaComponents is positive definite !!!
-    #     alpha <- 0.1 or sqrt(2) # coefficient that moderates eta's part in the model
-    #     B.CGH <- 1 # nb of CGH simulated blocks
-    #     nb.expl <- 100 # nb of variables with information in each block
-    #library(multiblog) # for idn function
+function(n, B=2, B.CGH=1, rho=rep(0.7, B-1), p=rep(100, B), n.expl=rep(100, B), 
+         noise_corr=rep(0.5, B), alpha=0.1, seed=4257){ #}, pathtodata="./"){
     
-    library(mvtnorm) # for rmvnorm function
-    #library(cghseg) # to simulate CGH data (non-normal distribution)
-    library(glmnet)
+  require(MULTIBLOX) # à ajouter au début de chaque fichier
+    # library(mvtnorm) # for rmvnorm function
+    # library(cghseg) # to simulate CGH data (non-normal distribution)
+    # library(glmnet)
     
-    if (B.CGH!=0){
-      source(paste(pathtodata, "simulCGHprofiles.R", sep="")) # hacked from cghseg function to set the desired seed
-    }
-    source(paste(pathtodata, "rmvnorm_withGivenLatent.R", sep=""))# hacked from rmvnorm function to provide CGH latent variables
-    source(paste(pathtodata, "functions.R", sep=""))
+#     if (B.CGH!=0){
+#       source(paste(pathtodata, "simulCGHprofiles.R", sep="")) # hacked from cghseg function to set the desired seed
+#     }
+#     source(paste(pathtodata, "rmvnorm_withGivenLatent.R", sep=""))# hacked from rmvnorm function to provide CGH latent variables
+#     source(paste(pathtodata, "functions.R", sep=""))
     
     set.seed(seed)
     
