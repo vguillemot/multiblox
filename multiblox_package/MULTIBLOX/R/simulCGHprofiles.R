@@ -1,3 +1,13 @@
+#' simulates CGH profiles, hacked form CGHseg
+#' 
+#' @param M number of profiles
+#' @param n number of probes (variables) for each profile
+#' @param k.mean average number of aberrant segment for each profile
+#' @param SNR Signal/Noise Ratio
+#' @param lambda Variance ratio between measurement noise and bakground noise
+#' @param seed
+#' @return Y a matrix of CGH profiles, Km max nb of segments for each profile, mu0 mean signal, sigma0 std deviation of signal, theta0 level of reference (2 copies)
+#' @keywords internal
 simulCGHprofiles <-
 function (M, n, k.mean, SNR, lambda, seed) 
 {

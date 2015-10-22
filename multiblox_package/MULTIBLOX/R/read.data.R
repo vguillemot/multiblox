@@ -1,3 +1,8 @@
+#' retrieves parameters from a JSON config file and calls generate_survival_simu_data()
+#' 
+#' @param cfg object from fromJSON(paste(readLines(data_json_file), collapse=""))
+#' @return res a set of simulated survival data
+#' @keywords internal
 read.data <-
 function(cfg){
     pathtodata <- cfg$pathtodata

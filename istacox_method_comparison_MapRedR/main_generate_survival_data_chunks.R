@@ -8,7 +8,7 @@ rm(list=ls()) ; gc()
 # Load libraries.
 library(mvtnorm)
 library(CMA)
-#library(multiblox)
+library(MULTIBLOX)
 library(rjson)
 
 #########################################################################
@@ -27,9 +27,9 @@ cv.cfg <- fromJSON(paste(readLines(cv_json_file), collapse=""))
 pathtowritefile <- data.cfg$pathtowritefile
 pathtoscript <- cv.cfg$pathtoscript
 # source required scripts
-sources <- c("functions.R", 
-             "generate_learning_sets.R")
-for(s in sources) { source(paste(pathtoscript, s, sep="")) }
+# sources <- c("functions.R", 
+#              "generate_learning_sets.R")
+# for(s in sources) { source(paste(pathtoscript, s, sep="")) }
 
 # CV parameters
 nf <- cv.cfg$nf   # nb of folds for outer CV

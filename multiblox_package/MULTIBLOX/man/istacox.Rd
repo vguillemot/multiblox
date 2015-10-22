@@ -2,7 +2,7 @@
 % Please edit documentation in R/istacox.R
 \name{istacox}
 \alias{istacox}
-\title{Computes the step for an iteration of ISTA Cox regression with a line search algorithm.}
+\title{Computes the beta coefficients for a sparse cox model via ISTA}
 \usage{
 istacox(X, I, R, alpha, kmax = 1000, epsilon = 1e-04, fast = FALSE,
   ada = FALSE, link, beta_init)
@@ -18,7 +18,7 @@ istacox(X, I, R, alpha, kmax = 1000, epsilon = 1e-04, fast = FALSE,
 
 \item{kmax}{is the maximal number of iterations.}
 
-\item{epsilon}{is rthe equired precision.}
+\item{epsilon}{is the required precision.}
 
 \item{fast}{is a boolean used to specify if FISTA (TRUE) is used instead of ISTA (FALSE, default).}
 
@@ -27,15 +27,11 @@ istacox(X, I, R, alpha, kmax = 1000, epsilon = 1e-04, fast = FALSE,
 \item{link}{is the total link between the current block and the other blocks.}
 
 \item{beta_init}{is the initial value of the weight vector (used mainly for warm restarts).}
-
-\item{b}{is the block to be treated by istacox}
-
-\item{D}{is a B by B matrix indicating which blocks are connected to each other}
 }
 \value{
-link is the total link between the current block and the other blocks.
+beta coefficients that maximize the Cox sparse partial likekihood, and k number of iterations
 }
 \description{
-Computes the step for an iteration of ISTA Cox regression with a line search algorithm.
+Computes the beta coefficients for a sparse cox model via ISTA
 }
 

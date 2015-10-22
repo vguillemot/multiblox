@@ -1,3 +1,10 @@
+#' Computes sparse Partial Loglikelihood
+#' 
+#' @param model is a vector of coefficients
+#' @param newdata is a ma trix of observations
+#' @param newy is a surviaval variable with time and status
+#' @param lambda is the sparsity parameter
+#' @return spll for sparse partial loglikelihood
 sparse.partial.loglik <-
 function(model, newdata, newy, lambda){
   # model : beta of the fitted model
@@ -5,7 +12,7 @@ function(model, newdata, newy, lambda){
   # newy : outcome from de the test set to compute I and R
   # lambda : sparsity parameter
   
-  beta <- model[["beta"]]
+  beta <- model
   ### Sets of patient at risk at Ti
   x.o <- newdata[order(newy[, 1]), ]
   y.o <- as.data.frame(newy[order(newy[, 1]), ])

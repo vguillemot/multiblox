@@ -1,3 +1,15 @@
+#' COmputes retval
+#' 
+#' @param x Vector or matrix of quantiles. If x is a matrix, each row is taken to be a quantile.
+#' @param n  Number of observations.
+#' @param mean Mean vector, default is rep(0, length = ncol(x)).
+#' @param sigma Covariance matrix, default is diag(ncol(x)).
+#' @param log	Logical; if TRUE, densities d are given as log(d).
+#' @param trustme	Logical; skip checks for full speed. You're on your own here!
+#' @param method	Matrix decomposition used to determine the matrix root of sigma, possible methods are eigenvalue decomposition ("eigen", default), singular value decomposition ("svd"), and Cholesky decomposition ("chol").
+#' @param pre0.9_9994	# Logical; if FALSE, the output produced in mvtnorm versions up to 0.9-9993 is reproduced. In 0.9-9994, the output is organized such that rmvnorm(10,...) has the same first ten rows as rmvnorm(100, ...) when called with the same seed.
+#' @return retval
+#' @keywords internal
 rmvnorm_withGivenLatent <-
 function (n, latent, mean = rep(0, nrow(sigma)), sigma = diag(length(mean)), 
           method = c("eigen", "svd", "chol"), pre0.9_9994 = FALSE) 

@@ -1,3 +1,12 @@
+#' Generates multiblock simulated survival data
+#' 
+#' @param n number of observations.
+#' @param p total number of variables.
+#' @param B number of blocks.
+#' @param p_frac fraction of variables with non-zero coefficients in the Cox model. 
+#' @param corr correlation among variables.
+#' @return X matrix of simulated data, y data-frame of survival data (time and status), my_var_names names of variables, h0 baseline hazard ratio
+
 generate_multiblock_survival_simu_data <-
 function(n=n, p=p, B=B, p_frac=rep(0.25, B), corr=0.5){
   require(survJamda)

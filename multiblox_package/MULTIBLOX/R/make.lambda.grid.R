@@ -1,3 +1,8 @@
+#' Computes a grid of parameter
+#' 
+#' @param X is a list of B matrices (blocks)
+#' @param path is either "naive", "smart" (not implemented yet) or "norm1" (only if B=2)
+#' @return lambda.grid, 10 lambda values per block ie 10^B tuples of lambdas
 make.lambda.grid <-
 function(X, path=c("naive", "smart", "norm1")){
     ##################################################################

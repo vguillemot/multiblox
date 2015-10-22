@@ -1,4 +1,5 @@
 #' Generate multi-block survival simulated data.
+#' 
 #' @param n total number of individuals.
 #' @param B number of non-CGH blocks.
 #' @param B.CGH number of CGH blocks.

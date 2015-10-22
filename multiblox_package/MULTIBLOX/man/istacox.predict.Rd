@@ -12,7 +12,7 @@ istacox.predict(model, x, y, D = NULL, lambda, type = c("spll", "deviance",
 
 \item{x}{list of B matrices of covariates of the test set,}
 
-\item{y}{list of B outcomes of the test set,}
+\item{y}{data frame of survival outcome with time and status,}
 
 \item{D}{B by B matrix indicating the links between blocks}
 

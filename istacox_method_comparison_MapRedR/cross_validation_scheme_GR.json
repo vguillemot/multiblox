@@ -1,9 +1,9 @@
 {
 "pathtoscript": "/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/",
-"cv_method": "CV",
-"cv_metric": "spll",
-"inner_cv_method": "CV",
-"inner_cv_metric": "deviance",
+"cv_method": "MCCV",
+"cv_metric": "deviance",
+"inner_cv_method": "MCCV",
+"inner_cv_metric": "spll",
 "nf": 5,
 "nfi": 5
 }

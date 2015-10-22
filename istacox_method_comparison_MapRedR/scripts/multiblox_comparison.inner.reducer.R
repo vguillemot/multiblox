@@ -2,23 +2,30 @@
 # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
 # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
 # source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")
-source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.R")
-source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
-source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.score.R")
+# source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.R")
+# source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
+# source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.score.R")
 
+library("MULTIBLOX")
 args <- commandArgs(trailingOnly = TRUE)
 
 # common parameters from command line : Rscript model.inner.reducer fold_file map_file_pattern outer_res_file i nfi cv_metric design
+# 1) /home/philippe/Projets/these/multiblox/multiblox_methods_comparison_MapRedR_results/test/fold_data_1.Rdata 
+# 2) /home/philippe/Projets/these/multiblox/multiblox_methods_comparison_MapRedR_results/test/hierarchical.map_res_1_ 
+# 3) /home/philippe/Projets/these/multiblox/multiblox_methods_comparison_MapRedR_results/test/multiblox_comparison.red_res_hierarchical1.Rdata
+# 4) 1 
+# 5) 5 
+# 6) hierarchical
 input_file_fold <- args[1]
 input_file_pattern <- args[2]
 outputfile <- args[3]
 outer_fold <- strtoi(args[4])
 n_inner_folds <- strtoi(args[5])
-cv_metric <- args[6]
-design <- args[7]
+design <- args[6]
 # custom parameters
-adaptative <- args[7]
-fast <- args[8]
+fast <- args[7]
+adaptative <- args[8]
+pathtoscript <- args[9]
 
 print(adaptative)
 print(fast)
@@ -29,7 +36,7 @@ load(input_file_fold) # data, cv_method, cv_metric, ...
 #beta0 <- matrix(0, nrow=(ncol(X.train)), ncol=1)
 
 ### initialization
-load(paste(input_file_pattern, 1,".Rdata", sep=""))
+load(paste(input_file_pattern, 1,".Rdata", sep="")) # cur.pred.score (spll) 1 x nb(lambda) cur.model(list[[nb(lambda)]]) lambda.grid
 n_lambdas = length(lambda.grid)
 pred.score <- matrix(NA, nrow=n_lambdas, ncol=n_inner_folds) 
 models <- NULL
@@ -46,7 +53,7 @@ models <- NULL
 if(B==1){
   x.o <- X.train[[1]][order(y.train[, 1]), ]
 }else{
-  x.o <- X.train[order(y.train[, 1]), ]
+  x.o <- lapply(X.train, function(l) l[order(y.train[, 1]), ])
 }
 y.o <- as.data.frame(y.train[order(y.train[, 1]), ])
 
@@ -61,21 +68,29 @@ names(R.train) <- paste0("R", which(y.o$status==1))
 ### gather all results
 ### dans le cas de multiblox, istacox.lambda.tune ne calcule que la vraisemblance partielle du training set (pred.score)
 ### et renvoie en plus le modèle
-CV <- matrix(NA, nrow=length(lambda.grid), ncol=n_inner_folds)
+CV <- NULL
+total.CV <- matrix(NA, nrow=nrow(lambda.grid), ncol=n_inner_folds)
 for(i in 1:n_inner_folds) {
   inputfile = paste(input_file_pattern, i,".Rdata", sep="")
   cat("DO:", inputfile, "\n")
   load(inputfile)
-  for(l in 1:length(lambda.grid)){
+  for(l in 1:nrow(lambda.grid)){
     #   models[[i]] <- cur.model # pour tous les lambdas de la grille
     #   pred.score[, i] <- cur.pred.score # pour tous les lambdas de la grille
-    print(dim(x.o[R.train[[sprintf("R%i", i)]], ]))
-    CV[l,i] <- sum(mapply(function(i){x.o[i, ] %*% cur.model[[l]][["beta"]] - log( sum( exp(x.o[R.train[[sprintf("R%i", i)]], ] %*% cur.model[[l]][["beta"]])))}, I.train)) - cur.pred.score[l,1]
+    # print(lapply((lapply(x.o, function(l) l[R.train[[sprintf("R%i", i)]], ])), dim))
+#     CV[l,i] <- sum(lapply(x.o, function(m) 
+#       {mapply(function(i) 
+#         {matrix(m[i, ], nrow=1) %*% matrix(cur.model[[l]][["beta"]], ncol=1) - log( sum( exp(m[R.train[[sprintf("R%i", i)]], ] %*% cur.model[[l]][["beta"]])))}, I.train)}))
+#     - cur.pred.score[l,1]
+    # print(lambda.grid[l, ])
+    for (b in 1:B){
+      CV[[b]] <- sum(mapply(function(i) {x.o[[b]][i,] %*% cur.model[[l]][["beta"]][[b]] - log( sum( exp(x.o[[b]][R.train[[sprintf("R%i", i)]], ] %*% cur.model[[l]][["beta"]][[b]])))}, I.train)) - cur.pred.score[l,1]
+    }
+    total.CV[l, i] <- sum(unlist(CV))
     #pll <- sum(mapply( function(i) newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", i)]], ]%*%beta) )), I))
   }
-
 }
-print(CV)
+# print(total.CV)
 
 if (design == "hierarchical") { 
   D <- matrix(0, ncol=B, nrow=B) 
@@ -84,10 +99,10 @@ if (design == "hierarchical") {
 }
 
 ### model selection one lambda parameter for each block
-lambda.opt <- unlist(lambda.grid[which.max(rowSums(CV, na.rm=T))])
-
+lambda.opt <- lambda.grid[which.max(rowSums(total.CV, na.rm=T)),]
+print(lambda.opt)
 ### refit
-model.refit <- relax_multiblox(X=x.o, I=I.train, R=R.train, D, lambda=lambda.opt, max.iter=1000, epsilon=1e-4, beta.init=NULL
+model.refit <- relax_multiblox(x=x.o, I=I.train, R=R.train, D, lambda=lambda.opt, max.iter=1000, eps=1e-4, beta.init=NULL,
                        fast=as.logical(fast), ada=as.logical(adaptative))
 cur.beta.train <- model.refit[["beta"]]
 
@@ -96,8 +111,8 @@ cur.beta.train <- model.refit[["beta"]]
 ### 2) le pronostic index
 print(cv_metric)
 ##3) PREDICT 
-dev <- istacox.predict(model=model.refit, x=X.test[[1]], y=y.test, lambda=lambda.opt, type="deviance")
-pi <- istacox.predict(model=model.refit, x=X.test[[1]], y=y.test, lambda=lambda.opt, type="pi")
+dev <- istacox.predict(model=cur.beta.train, x=X.test, y=y.test, D=D, lambda=lambda.opt, type="deviance")
+pi <- istacox.predict(model=cur.beta.train, x=X.test, y=y.test, D=D, lambda=lambda.opt, type="pi")
 model_dev <- dev[["est"]]
 model_pi <- pi[["est"]]
 
