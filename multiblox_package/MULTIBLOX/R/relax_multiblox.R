@@ -1,3 +1,17 @@
+#' Performs block relaxation (ex-ALS Alternating Least Squares)
+#' 
+#' @param x is a list of B matrices (blocks)
+#' @param I list of non censored individuals, ranked by event time.
+#' @param R list of sets of individuals at risk at each non censored ranked time
+#' @param D is the matrix of design storing the links among blocks
+#' @param lambda a tuple of L1-norm shrinkage parameter
+#' @param eps is the required precision.
+#' @param max.iter is the maximal number of block relaxation iterations.
+#' @param beta_init is the initial value of the weight vector (used mainly for warm restarts).
+#' @param fast is a boolean used to specify if FISTA (TRUE) is used instead of ISTA (FALSE, default).
+#' @param ada is a boolean used to specify is the step must be chosen at each iteration (TRUE) or not (FALSE, default).
+#' @return beta a list of multiblox coefficients, convergence speed of convergence, niter nb of iterations
+#' @keywords internal
 relax_multiblox <-
 function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL, fast=fast, ada=ada){
   ### Block relaxation for multiblox
@@ -11,8 +25,8 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
     # max.iter is an integer corresponding to the maximum nb of ALS iterations
     # beta.init is a p by 1 vector of the initial values of beta
     
-    source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.R")
-    source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
+#     source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.R")
+#     source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
     
     B <- length(x) #number of blocks
     n <- nrow(x[[1]])
@@ -43,16 +57,16 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
     print(D)
     
     for (iter in 1:max.iter){
+      # print(paste("relax iter : ", iter, sep=""))
       for (b in 1:B) {
-        print(paste("block : ", b))
+        # print(paste("block : ", b))
 #         print(dim(x[[b]]))
 #         print(dim(beta[[b]]))
         link <- link(x, D, b, beta)
-        istacox_res <- istacox(X=x[[b]], I=I, R=R, alpha=0.5*lambda, kmax=1000, epsilon=1e-4, 
+        istacox_res <- istacox(X=x[[b]], I=I, R=R, alpha=0.5*lambda[[b]], kmax=1000, epsilon=1e-4, 
                            fast=fast, ada=ada, link=link, beta_init=beta[[b]])
         iter.inner <- iter.inner + istacox_res$k
-        print(paste("relax iter : ", iter, sep=""))
-        print(paste("istacox iter : ", iter.inner, sep=""))
+        # print(paste("istacox iter : ", iter.inner, sep=""))
         if (max.iter.inner == istacox_res$k) {
           div.inner <- div.inner + 1
           consec_max.iter <- consec_max.iter + 1
@@ -64,8 +78,8 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
       }
 # print("un tour de block relaxation")
       d <- mapply("-", beta, beta_new, SIMPLIFY=FALSE)
-      e <- sapply(d, base::norm, "f")
-      if(max(e)<eps) break
+      e[[iter]] <- sapply(d, base::norm, "f")
+      if(max(unlist(e))<eps) break
       beta <- beta_new
       if (consec_max.iter >= (2 * B)) break # all the blocks diverge 2 times
     }

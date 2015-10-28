@@ -1,18 +1,16 @@
-#' Computes the step for an iteration of ISTA Cox regression with a line search algorithm.
+#' Computes the beta coefficients for a sparse cox model via ISTA
 #' 
 #' @param X is a list of B matrices (blocks)
-#' @param b is the block to be treated by istacox
-#' @param D is a B by B matrix indicating which blocks are connected to each other
 #' @param I list of non censored individuals, ranked by event time.
 #' @param R list of sets of individuals at risk at each non censored ranked time
 #' @param alpha L1-norm shrinkage parameter
 #' @param kmax is the maximal number of iterations.
-#' @param epsilon is rthe equired precision.
+#' @param epsilon is the required precision.
 #' @param fast is a boolean used to specify if FISTA (TRUE) is used instead of ISTA (FALSE, default).
 #' @param ada is a boolean used to specify is the step must be chosen at each iteration (TRUE) or not (FALSE, default).
 #' @param link is the total link between the current block and the other blocks.
 #' @param beta_init is the initial value of the weight vector (used mainly for warm restarts).
-#' @return link is the total link between the current block and the other blocks.
+#' @return beta coefficients that maximize the Cox sparse partial likekihood, and k number of iterations
 istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4, 
                     fast=FALSE, ada=FALSE, link, beta_init) {
 

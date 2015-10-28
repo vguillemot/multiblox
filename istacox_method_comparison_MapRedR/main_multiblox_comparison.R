@@ -17,11 +17,9 @@ rm(list=ls()) ; gc()
 # Load libraries.
 library(mvtnorm)
 library(CMA)
-#library(multiblog)
+library(MULTIBLOX)
 library(rjson)
 library(glmnet)
-
-print("BOnjour !!")
 
 #########################################################################
 ###
@@ -39,8 +37,8 @@ method.cfg <- fromJSON(paste(readLines(method_json_file), collapse=""))
 pathtowritefile <- data.cfg$pathtowritefile
 pathtoscript <- method.cfg$pathtoscript
 # source required scripts
-sources <- c("multiblox.lambda.tune.R", "functions.R", "make.lambda.grid.R", "generate_learning_sets.R")
-for(s in sources) { source(paste(pathtoscript, s, sep="")) }
+# sources <- c("multiblox.lambda.tune.R", "functions.R", "make.lambda.grid.R", "generate_learning_sets.R")
+# for(s in sources) { source(paste(pathtoscript, s, sep="")) }
 
 # method
 model.name <- method.cfg$model.name
@@ -59,6 +57,12 @@ cv_method <- method.cfg$cv_method
 cv_metric <- method.cfg$cv_metric
 inner_cv_method <- method.cfg$inner_cv_method
 inner_cv_metric <- method.cfg$inner_cv_metric
+
+# method parameters
+method.map.param <- method.cfg$model.custom.param.map # fast adaptative pathtoscript
+method.ired.param <- method.cfg$model.custom.param.ired # fast adaptative pathtoscript
+print(method.map.param)
+print(method.ired.param)
 
 coxnet_res_file <- paste(pathtowritefile, "coxnet_red_res_",sep="")
 scale <- T
@@ -109,9 +113,8 @@ colnames(X.concat) <- unlist(my_var_names)
 # glmnet call for coxnet !!
 if (do_coxnet) {
   for (i in 1:nrow(trainmat.outer)){
-    cat(paste("Rscript",  paste(pathtoscript, "coxnet.mapper.R", sep=""), 
-            paste(pathtowritefile, "fold_data_",  i, ".Rdata", sep=""), 
-            paste(coxnet_res_file, i, ".Rdata", sep=""), nf, cv_method, cv_metric, "\n",sep=" ")) 
+    cat(paste("Rscript",  paste(pathtoscript, "coxnet.mapper.R", sep=""), paste(pathtowritefile, "fold_data_",  i, ".Rdata", sep=""), 
+            paste(coxnet_res_file, i, ".Rdata", sep=""), nf, cv_method, cv_metric, "\n", sep=" ")) 
   }
 #   cat(paste("Rscript",  paste(pathtoscript, "coxnet.outer.reducer.R", sep=""), 
 #              coxnet_res_file, nf, paste(pathtowritefile, "coxnet_res.Rdata", sep=""), "\n",sep=" ")) 
@@ -169,11 +172,11 @@ for (i in 1:nrow(trainmat.outer)){
           ### commandes de mapper multiblox
           cat(paste("Rscript", paste(pathtoscript, model.mapper, sep=""), fold_file, 
                     map_output_file, grid.file, k, i,
-                    inner_cv_method, inner_cv_metric, des, pathtoscript, "\n",sep=" "))
+                    inner_cv_method, inner_cv_metric, des, method.map.param, "\n",sep=" "))
         }
         ### commandes inner reducer multiblox
         cat(paste("Rscript", paste(pathtoscript, model.inner.reducer, sep=""), fold_file, map_file_pattern, outer_res_file,
-                  i, nfi, des, "\n",sep=" "))
+                  i, nfi, des, method.ired.param, "\n",sep=" "))
   }
 }
 

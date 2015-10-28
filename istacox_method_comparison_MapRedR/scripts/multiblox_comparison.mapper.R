@@ -1,6 +1,6 @@
 # Mapper for multiblox_comparison
 # Calls multiblox.lambda.tune
-
+library("MULTIBLOX")
 args <- commandArgs(trailingOnly = TRUE)
 print(args)
 
@@ -14,7 +14,9 @@ print(args)
 # 6) CV 
 # 7) deviance 
 # 8) hierarchical 
-# 9) /home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/
+# 9) fast
+# 10) adaptative
+# 11) pathtoscript
 fold_file <- args[1]
 output_file <- args[2]
 grid.file <- args[3]
@@ -22,12 +24,11 @@ inner_fold <-strtoi(args[4])
 outer_fold <- strtoi(args[5])
 inner_cv_method <- args[6]
 inner_cv_metric <- args[7]
-# custom parameters : model.custom.param.map
 design <- args[8]
-pathtoscript <- args[9]
-
-adaptative <- F
-fast <- F
+# custom parameters : model.custom.param.map
+fast <- args[9]
+adaptative <- args[10]
+pathtoscript <- args[11]
 
 print(paste("design : ", design, sep=""))
 print(paste("adaptative : ", adaptative, sep=""))
@@ -38,8 +39,8 @@ print(paste("pathtoscript : ", pathtoscript, sep=""))
 load(grid.file)
 lambda.grid <- parameters.grid
 
-if (is.na(pathtoscript)) { pathtoscript = "./" }
-source(paste(pathtoscript, "multiblox.lambda.tune.R", sep=""))
+# if (is.na(pathtoscript)) { pathtoscript = "./" }
+# source(paste(pathtoscript, "multiblox.lambda.tune.R", sep=""))
 
 load(fold_file)
 

@@ -1,3 +1,10 @@
+#' Generates monoblock simulated survival data
+#' 
+#' @param n number of observations.
+#' @param p total number of variables.
+#' @param p_frac fraction of variables with non-zero coefficients in the Cox model. 
+#' @return X matrix of simulated data, y data-frame of survival data (time and status), my_var_names names of variables, h0 baseline hazard ratio
+
 generate_monoblock_survival_data <-
 function(n, p, p_frac){
   set.seed(10101)

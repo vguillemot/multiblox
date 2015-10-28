@@ -1,3 +1,19 @@
+#' Computes all sparse cox models for a grid of parameter lambda
+#' 
+#' @param X is a list of B matrices (blocks)
+#' @param y is the survival variable including time and status
+#' @param D is the matrix of design storing the links among blocks
+#' @param trainmat a matrix of observations indices indicating the training set for each CV fold of model selection.
+#' @param i iteration of inner CV loop
+#' @param outer_it iteration of outer CV loop
+#' @param lambda.grid a grid of tuples of lambda parameters
+#' @param scale a boolean indicating if scaling should be performed
+#' @param method is either "CV", "LOOCV" or "MCCV" to choose CV method
+#' @param metric is either "spll" for sparse partial loglikelihood, "deviance" or "pi" for Prognostic index is computed for model assessment and selection.
+#' @param adaptative boolean used to specify is the step must be chosen at each iteration (TRUE) or not (FALSE, default).
+#' @param fast boolean used to specify if FISTA (TRUE) is used instead of ISTA (FALSE, default).
+#' @param path is either "naive", "smart" (not implemented yet) or "norm1" (only if B=2)
+#' @return lambda.grid, 10 lambda values per block ie 10^B tuples of lambdas
 multiblox.lambda.tune <-
 function(X, y, D, trainmat, i, outer_it, lambda.grid, scale=T, method="CV", metric="spll", adaptative=TRUE, fast=TRUE){
     # x is a list of B (p_k by n) matrices of predictors
@@ -14,11 +30,11 @@ function(X, y, D, trainmat, i, outer_it, lambda.grid, scale=T, method="CV", metr
     library(MASS)
     library(CMA)
     library(survival)
-  #  library(multiblox)
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/relax_multiblox.R")
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.score.R")
-  source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/functions.R")
+    library(MULTIBLOX)
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/relax_multiblox.R")
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.score.R")
+#   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/functions.R")
 #   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.R")
 #   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.predict.R")
 #   source("/home/cathy/git_repo/multiblox/istacox_MapRedR/scripts/istacox.score.R")

@@ -1,9 +1,13 @@
 # Mapper for Coxnet Ridge, LASSO, ElasticNet
-library(glmnet)
-library(survival)
-#library(multiblog)
-source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/functions.R")
-source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
+library("glmnet")
+library("methods") ### to avoid the following bug in glmnet when executed via Rscript :
+# Error in is(x, "CsparseMatrix") : could not find function "new"
+# Calls: source ... <Anonymous> -> glmnet -> elnet -> getcoef -> drop0 -> is
+# Execution halted
+library("survival")
+library("MULTIBLOX")
+# source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/functions.R")
+# source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/istacox.predict.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 # common parameters

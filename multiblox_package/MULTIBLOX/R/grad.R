@@ -6,10 +6,10 @@
 #' @param R list of sets of individuals at risk at each non censored ranked time.
 #' @param alpha L1-norm shrinkage parameter.
 #' @param link is the total link between the current block and the other blocks.
-#' @return gradient
+#' @return gradient of Cox partial likelihood
 #' @keywords internal
 grad <- function(X, beta, I, R, alpha, link) {
-  wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta) / sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))), I, R)
+  wij <- mapply( function(i, j) t(exp( X[j, ]%*%beta - ln(sum( exp(X[R[[sprintf("R%i", i)]], ]%*%beta))))), I, R)
   names(wij) <- names(R)
   xbar <- t(sapply(names(R), function(r) as.matrix(wij[[r]])%*%as.matrix(X[R[[r]], ])) )
   grad <- - colSums( X[I, ] - xbar ) + (alpha/2)*beta - link

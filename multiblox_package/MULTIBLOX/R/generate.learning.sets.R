@@ -1,4 +1,12 @@
-
+#' Generates learning sets of observations indices according to the cross-validation scheme.
+#' 
+#' @param N number of observations.
+#' @param y factor to predict.
+#' @param method "LOOCV" for Leave-One-Out Cross Validation, "CV" for Cross Validation, "MCCV" for Monte Carlo Cross Validation.
+#' @param nf.cv number of folds.
+#' @param inner_cv_seed seed for set.seed function.
+#' @return a matrix of nf.cv sets of observation indices
+#' @keywords internal
 
 generate.learning.sets <-
 function(N, y, method="MCCV", nf.cv=10, inner_cv_seed=4257) {

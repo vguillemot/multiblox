@@ -20,7 +20,7 @@ grad(X, beta, I, R, alpha, link)
 \item{link}{is the total link between the current block and the other blocks.}
 }
 \value{
-gradient
+gradient of Cox partial likelihood
 }
 \description{
 Gradient

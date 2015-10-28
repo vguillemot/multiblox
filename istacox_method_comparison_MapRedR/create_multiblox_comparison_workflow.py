@@ -23,7 +23,7 @@ with open(all_jobs_file, 'r') as f:
 
         if(cmd[1].endswith("multiblox_comparison.mapper.R")):
             print "multiblox_comparison.mapper"
-            design = cmd[-2] #cmd[2].split('_')[-2]
+            design = cmd[-4] #cmd[2].split('_')[-2]
             outer = cmd[6]
             key = outer+design
             if(not dep_dic.has_key(key)):
@@ -33,7 +33,7 @@ with open(all_jobs_file, 'r') as f:
             dep_dic[key].append(cur_job)
         elif(cmd[1].endswith("multiblox_comparison.inner.reducer.R")):
             print "multiblox_comparison.inner.reducer"
-            design = cmd[-1] #.split('_')[-2]
+            design = cmd[-4] #.split('_')[-2]
             outer = cmd[5]
             key = outer+design
             if(not dep_dic.has_key(key)):

@@ -1,3 +1,10 @@
+#' Computes the partial loglikelihood
+#' 
+#' @param model is a vector of Cox coefficients
+#' @param newdata is a matrix of observations
+#' @param newy is a survival variable with time and status
+#' @return the partial loglikelihood
+#' @keywords internal
 partial.loglik <-
 function(model, newdata, newy){
   # model : beta of the fitted model
@@ -7,6 +14,9 @@ function(model, newdata, newy){
   
   beta <- matrix(model, ncol=1)
   ### Sets of patient at risk at Ti
+#   print(lapply(model, dim))
+#   print(lapply(newdata, dim))
+#   print(dim(newy))
   x.o <- newdata[order(newy[, 1]), ]
   y.o <- as.data.frame(newy[order(newy[, 1]), ])
   

@@ -2,7 +2,7 @@
 #' 
 #' @param model list of B beta estimates from the train set, 
 #' @param x list of B matrices of covariates of the test set, 
-#' @param y list of B outcomes of the test set,  
+#' @param y data frame of survival outcome with time and status,  
 #' @param D B by B matrix indicating the links between blocks
 #' @param spll = sparse partial loglikelihood
 #' @param deviance = related to the null model
@@ -11,7 +11,7 @@
 istacox.predict <-
 function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
 
-#   library(survival)
+  library(survival)
 #   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/sparse.partial.loglik.R")
 #   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/partial.loglik.R")
 #   source("/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/link.R")
@@ -19,7 +19,7 @@ function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
   
   B <- length(x)
   
-  spll <- res <- lk <- pll <- dev_null <- NULL
+  spll <- res <- lk <- pll <- dev_null <- dat <- NULL
   
   null_model <- matrix(0, nrow=length(model), ncol=1)
   
@@ -43,13 +43,13 @@ function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
       res <- spll
     }
   } else if(type=="deviance"){
-    print("deviance")
+    print("predict deviance")
     if (!is.null(D)){
-      # print("multiblox")
+      print("multiblox")
       for (b in 1:B){
-#         print(model[[b]])
-#         print(x[[b]])
+        print("modele")
         pll[[b]] <- partial.loglik(model=model[[b]], newdata=x[[b]], newy=y)
+        print("modele nul")
         dev_null[[b]] <- partial.loglik(model=matrix(0, nrow = length(model[[b]]), ncol=1), newdata=x[[b]], newy=y)
       }
       total_pll <- sum(unlist(pll)) - total_link
@@ -59,7 +59,7 @@ function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
       res <- -2*(total_pll - total_null)
       # print(paste("Deviance du modele par rapport au modele mul : ", res, sep=""))
     } else {
-      # print("coxnet")
+      print("coxnet")
       pll <- partial.loglik(model=model, newdata=x, newy=y)
       # print(paste("pll : ", pll, sep=""))
       dev_null <- partial.loglik(model=matrix(0, nrow = length(model), ncol=1), newdata=x, newy=y)
@@ -74,7 +74,7 @@ function(model, x, y, D=NULL, lambda, type=c("spll", "deviance", "pi")){
         dat[[b]] <- x[[b]]%*%model[[b]]
       }
       lp <- Reduce(cbind, x = dat)
-      fit <- lapply(coxph(Surv(y[, 1], y[,2])~lp))
+      fit <- coxph(Surv(y[, 1], y[,2])~lp)
       res <- summary(fit)$logtest["pvalue"]
     } else {
       dat <- as.matrix(x)%*%as.matrix(model)

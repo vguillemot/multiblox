@@ -1,3 +1,10 @@
+#' Centers and scales a matrix A
+#' 
+#' @param A is a matrix of observations
+#' @param center is a boolean indicating if centering should be performed
+#' @param scale is a boolean indicating if scaling should be performed
+#' @return the new matrix A, centered and/or scaled, with scaling factor as an attribute
+#' @keywords internal
 scale2 <-
 function (A, center = TRUE, scale = TRUE) 
 {
