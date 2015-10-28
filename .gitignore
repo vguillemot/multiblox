@@ -1,3 +1,7 @@
 *.pdf
 *.Rhistory
 *~
+
+/home/guillemot/git/multiblox/istacox_method_comparison_MapRedR/cross_validation_scheme_vg.json
+/home/guillemot/git/multiblox/istacox_method_comparison_MapRedR/multiblox_comparison_vg.json
+/home/guillemot/git/multiblox/istacox_method_comparison_MapRedR/simulated_multiblock_data_vg.json
