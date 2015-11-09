@@ -1,10 +1,14 @@
 *.pdf
 *.Rhistory
 *~
+*.Rd
 
 istacox_method_comparison_MapRedR/cross_validation_scheme_vg.json
 istacox_method_comparison_MapRedR/multiblox_comparison_vg.json
 istacox_method_comparison_MapRedR/simulated_multiblock_data_vg.json
 istacox_method_comparison_MapRedR/cmd.log
 istacox_method_comparison_MapRedR/test.wf
+
+
+
 

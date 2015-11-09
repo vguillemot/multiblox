@@ -32,7 +32,7 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
     n <- nrow(x[[1]])
     p <- sapply(x, ncol) #number of covariates in each block
     
-    beta <- beta_new <- e <- S <- eta <- cvg <- NULL
+    beta <- beta_new <- e <- S <- eta <- cvg <- link <- NULL
     
     ### Initialization step
     iter <- 1
@@ -53,37 +53,43 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
     max.iter.inner <- 200
     consec_max.iter <- 0
     beta_new <- beta
+    crit <- 0
     
     print(D)
     
     for (iter in 1:max.iter){
-      # print(paste("relax iter : ", iter, sep=""))
+      print(paste("relax iter : ", iter, sep=""))
       for (b in 1:B) {
-        # print(paste("block : ", b))
-#         print(dim(x[[b]]))
-#         print(dim(beta[[b]]))
+        print(paste("block : ", b))
+        print(dim(x[[b]]))
+        print(dim(beta[[b]]))
         link <- link(x, D, b, beta)
         istacox_res <- istacox(X=x[[b]], I=I, R=R, alpha=0.5*lambda[[b]], kmax=1000, epsilon=1e-4, 
                            fast=fast, ada=ada, link=link, beta_init=beta[[b]])
         iter.inner <- iter.inner + istacox_res$k
-        # print(paste("istacox iter : ", iter.inner, sep=""))
+        print(paste("istacox iter : ", iter.inner, sep=""))
         if (max.iter.inner == istacox_res$k) {
           div.inner <- div.inner + 1
           consec_max.iter <- consec_max.iter + 1
         } else {
           consec_max.iter <- 0
         }
-        #       beta_new <- lapply(NR_step$beta, beta_norm2)
+#               beta_new <- lapply(NR_step$beta, beta_norm2)
         beta_new[[b]] <- istacox_res$beta
       }
-# print("un tour de block relaxation")
+print("un tour de block relaxation")
       d <- mapply("-", beta, beta_new, SIMPLIFY=FALSE)
       e[[iter]] <- sapply(d, base::norm, "f")
       if(max(unlist(e))<eps) break
       beta <- beta_new
+      for (c in 1:B){
+        pll <- sum(mapply( function(i) {x[[c]][i, ]%*%beta[[c]] - log(sum( exp(as.matrix(x[[c]][R[[sprintf("R%i", i)]], ])%*%beta[[c]]) ))}, I))
+        crit <- crit+pll
+      }
+print(paste("critere : ", crit, sep=""))
       if (consec_max.iter >= (2 * B)) break # all the blocks diverge 2 times
     }
     #eta <- mapply(x, beta, FUN=function(a, b) a%*%b, SIMPLIFY=FALSE) ### bug 3 blocs
     print(paste("Block relaxation iter (inner - div): ", iter , "(", iter.inner, "-", div.inner, ")" ))
-    return(list(beta = beta_new, convergence = unlist(e), niter=iter))
+    return(list(beta = beta_new, convergence = unlist(e), niter=iter, crit=crit))
 }
