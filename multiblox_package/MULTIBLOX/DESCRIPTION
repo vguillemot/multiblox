@@ -7,3 +7,4 @@ Author: cathy Philippe and Vincent Guillemot
 Maintainer: Cathy Philippe <cathy.philippe@gustaveroussy.fr>
 Description: Multiblock analysis of Survival data based on Cox regression.
 License: GPL (>2)
+RoxygenNote: 5.0.0

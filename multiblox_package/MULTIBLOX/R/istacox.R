@@ -42,7 +42,7 @@ istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4,
       }
     }
     betaold <- betanew
-    betanew <- prox(u - t*grad(X, u, I, R, alpha, link), t, alpha)
+    betanew <- prox(u - t*grad(X, u, I, R, 0.5*alpha, link), t, alpha)
     if (sum((betanew-betaold)**2) < epsilon ) break
   }
   return(list(beta=betanew, k=k))

@@ -24,5 +24,5 @@ link <- function(X, D, b, beta.init){
   for(d in setdiff(1:B, b)){
     S <- S + D[b, d] * t(X[[b]])%*%eta[[d]]
   }
-  return(S)
+  return(sum(S))
 }

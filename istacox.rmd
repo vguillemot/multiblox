@@ -292,4 +292,3 @@ plot(beta_star, res2$beta, main="ISTACOX ada", xlab=expression(beta^symbol("*"))
 plot(beta_star, res3$beta, main="FISTACOX", xlab=expression(beta^symbol("*")), ylab=expression(hat(beta)))
 plot(beta_star, res4$beta, main="FISTACOX ada", xlab=expression(beta^symbol("*")), ylab=expression(hat(beta)))
 ```
-
