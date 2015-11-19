@@ -91,12 +91,11 @@ print("un tour de block relaxation")
         }
         crit <- crit+pll
       }
-      mb_crit <- - crit - sum(lk) + pen
-# print(dim(crit))
-# print(dim(link))
-# print(dim(pen))
-# print(dim(mb_crit))
-print(paste("critere : ", mb_crit, sep=""))
+      mb_crit <- crit - sum(lk) + pen
+print(paste("pll : ", crit))
+print(paste("lien : ", link))
+print(paste("penalite : ", pen))
+print(paste("critere total : ", mb_crit, sep=""))
       if (consec_max.iter >= (2 * B)) break # all the blocks diverge 2 times
     }
     #eta <- mapply(x, beta, FUN=function(a, b) a%*%b, SIMPLIFY=FALSE) ### bug 3 blocs
