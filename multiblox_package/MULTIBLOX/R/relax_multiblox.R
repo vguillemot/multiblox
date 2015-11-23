@@ -80,20 +80,21 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
 print("un tour de block relaxation")
       d <- mapply("-", beta, beta_new, SIMPLIFY=FALSE)
       e[[iter]] <- sapply(d, base::norm, "f")
-      if(max(unlist(e))<eps) break
+      print(e)
+      if(max(unlist(e[[iter]]))<eps) break
       beta <- beta_new
 ### Calcul du critère
       for (c in 1:B){
-        pll <- sum(mapply( function(i) {x[[c]][i, ]%*%beta[[c]] - log(sum( exp(as.matrix(x[[c]][R[[sprintf("R%i", i)]], ])%*%beta[[c]]) ))}, I))
+        pll <- sum(mapply( function(i) {x[[c]][i, ]%*%beta[[c]] - log(sum( exp(x[[c]][R[[sprintf("R%i", i)]],,drop=FALSE]%*%beta[[c]]) ))}, I))
         pen <- pen + lambda[[c]]*(norm.l1(beta[[c]])+0.5*norm.l2.2(beta[[c]]))
         for (d in setdiff(1:B, c)){
           lk[[c]] <- sum(D[c, d]*t(x[[c]]%*%beta[[c]])%*%x[[d]]%*%beta[[d]])
         }
         crit <- crit+pll
       }
-      mb_crit <- crit - sum(lk) + pen
+      mb_crit <- - crit + sum(lk) + pen
 print(paste("pll : ", crit))
-print(paste("lien : ", link))
+print(paste("lien : ", sum(lk)))
 print(paste("penalite : ", pen))
 print(paste("critere total : ", mb_crit, sep=""))
       if (consec_max.iter >= (2 * B)) break # all the blocks diverge 2 times

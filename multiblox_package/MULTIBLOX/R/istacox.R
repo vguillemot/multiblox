@@ -25,8 +25,14 @@ istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4,
   }
   
   t <- 1/max(eigen(t(X)%*%X)$values)
+#   told <- 1/max(eigen(t(X)%*%X)$values)
+#   print(paste("Old step : ", told))
+#   DD <- apply(X, 2, function(v) sum(sapply(names(R), function(r) 1/(4*n)*diff(range(v[R[[r]]]))^2 )) )
+#   t <- 1/max(DD)
+  print(paste("New step : ", t))
   # print("1er grad")
   betanew <- prox(betaold - t*grad(X, betaold, I, R, alpha, link),t,alpha)
+  pll <- sum(mapply( function(i) {X[i, ]%*%betanew - log(sum( exp(X[R[[sprintf("R%i", i)]],,drop=F]%*%betanew) ))}, I))
   
   for (k in 2:kmax) {
     if (fast) {
@@ -43,7 +49,28 @@ istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4,
     }
     betaold <- betanew
     betanew <- prox(u - t*grad(X, u, I, R, 0.5*alpha, link), t, alpha)
-    if (sum((betanew-betaold)**2) < epsilon ) break
+    if (sum((betanew-betaold)**2) < epsilon ) {
+      pll <- sum(mapply( function(i) {X[i, ]%*%betanew - log(sum( exp(X[R[[sprintf("R%i", i)]],,drop=F]%*%betanew) ))}, I))
+      pen <- 2*alpha*(norm.l1(betanew) + 0.5*norm.l2.2(betanew))
+      print(paste("pll : ", pll))
+      print(paste("pen : ", pen))
+      print(paste("step : ", t))
+      break
+    }
+    pllnew <- sum(mapply( function(i) {X[i, ]%*%betanew - log(sum( exp(X[R[[sprintf("R%i", i)]],,drop=F]%*%betanew) ))}, I))
+    if (pllnew < pll) {
+      print("Something is wrong !")
+      # t <- t/10
+      # print(paste("New step : ", t))
+      link <- 0.5*link
+      print(paste("New link : ", link))
+      
+    }
+    pll <- pllnew
+    pen <- 2*alpha*(norm.l1(betanew) + 0.5*norm.l2.2(betanew))
+    print(paste("step : ", t))
+    print(paste("pll : ", pll))
+    print(paste("pen : ", pen))
   }
   return(list(beta=betanew, k=k))
 }

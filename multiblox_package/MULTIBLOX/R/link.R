@@ -6,7 +6,7 @@
 #' @param beta list of B cox coefficient vectors
 #' @return The sum of covariance between linked blocks
 link <- function(X, D, b, beta.init){
-  
+
   B <- length(X)
   p <- lapply(X, ncol)
   
