@@ -132,6 +132,7 @@ Le script générant des données simulées présenté dans le cadre suivant est
 ```{r coxsim, echo=TRUE}
 #Cox
 set.seed(10101)
+# N <- 50 ; p <- 102
 N <- 250 ; p <- 66
 nzc <- p/3
 X <- matrix(rnorm(N*p),N,p)

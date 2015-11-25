@@ -12,6 +12,7 @@ function(X, path=c("naive", "smart", "norm1")){
     ##################################################################
 
     B <- length(X) # nb of blocks
+    alpha <- 0.5
     
     # scaling
     scale <- TRUE
@@ -20,7 +21,7 @@ function(X, path=c("naive", "smart", "norm1")){
     }
     
     lambda.max <- rep(0, B)
-    eps <- 0.005
+    eps <- 0.01 # cf Yang et al (2013) the cocktail algorithm
     for (i in 1:B){
       lambda.max[[i]] <- 0.5*sum(apply(X[[i]], 2, function(c) norm(c, "2")))
     }
