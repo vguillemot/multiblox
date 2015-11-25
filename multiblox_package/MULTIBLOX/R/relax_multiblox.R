@@ -76,6 +76,7 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
         }
 #               beta_new <- lapply(NR_step$beta, beta_norm2)
         beta_new[[b]] <- istacox_res$beta
+        # beta_new[[b]] <- beta_new[[b]] / norm.l2(beta_new[[b]])
       }
 print("un tour de block relaxation")
       d <- mapply("-", beta, beta_new, SIMPLIFY=FALSE)
