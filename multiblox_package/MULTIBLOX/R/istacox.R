@@ -23,8 +23,9 @@ istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4,
   } else {
     betaold <- rnorm(p) 
   }
-  
-  t <- 1/(max(eigen(t(X)%*%X)$values) + alpha/2)
+  num1 <- svd(X, nu=1, nv=1)$d[1]^2
+  t <- 1/(num1 + alpha/2)
+#  t <- 1/(max(eigen(t(X)%*%X)$values) + alpha/2)
 #   told <- 1/max(eigen(t(X)%*%X)$values)
 #   print(paste("Old step : ", told))
 #   DD <- apply(X, 2, function(v) sum(sapply(names(R), function(r) 1/(4*n)*diff(range(v[R[[r]]]))^2 )) )
