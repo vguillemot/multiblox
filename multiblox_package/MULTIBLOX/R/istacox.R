@@ -12,7 +12,7 @@
 #' @param beta_init is the initial value of the weight vector (used mainly for warm restarts).
 #' @return beta coefficients that maximize the Cox sparse partial likekihood, and k number of iterations
 istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4, 
-                    fast=FALSE, ada=FALSE, link, beta_init) {
+                    fast=FALSE, ada=FALSE, link, beta_init, t=NULL) {
 
     
   p <- ncol(X)
@@ -23,8 +23,11 @@ istacox <- function(X, I, R, alpha, kmax=1000, epsilon=1e-4,
   } else {
     betaold <- rnorm(p) 
   }
-  num1 <- svd(X, nu=1, nv=1)$d[1]^2
-  t <- 1/(num1 + alpha/2)
+  
+  if (is.null(t)) {
+    num1 <- svd(X, nu=1, nv=1)$d[1]^2
+    t <- 1/(num1 + alpha/2)
+  }
 #  t <- 1/(max(eigen(t(X)%*%X)$values) + alpha/2)
 #   told <- 1/max(eigen(t(X)%*%X)$values)
 #   print(paste("Old step : ", told))
