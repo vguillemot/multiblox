@@ -57,6 +57,13 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
     
     print(D)
     
+    # Compute step
+    t <-NULL
+    for (b in 1:B) {
+      num1 <- svd(x[[b]], nu=1, nv=1)$d[1]^2
+      t[[b]] <- 1/(num1 + 0.5*lambda[[b]]/2)
+    }
+    
     for (iter in 1:max.iter){
       print(paste("relax iter : ", iter, sep=""))
       for (b in 1:B) {
@@ -65,7 +72,7 @@ function(x, I, R, D, lambda = 0, eps = 0.001, max.iter = 10000, beta.init = NULL
 #         print(dim(beta[[b]]))
         link <- link(x, D, b, beta)
         istacox_res <- istacox(X=x[[b]], I=I, R=R, alpha=0.5*lambda[[b]], kmax=1000, epsilon=1e-4, 
-                           fast=fast, ada=ada, link=link, beta_init=beta[[b]])
+                           fast=fast, ada=ada, link=link, beta_init=beta[[b]], t=t[[b]])
         iter.inner <- iter.inner + istacox_res$k
         print(paste("istacox iter : ", iter.inner, sep=""))
         if (max.iter.inner == istacox_res$k) {
