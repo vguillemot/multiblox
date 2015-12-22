@@ -1,7 +1,7 @@
 {
   "model.name": "multiblox_comparison",
   "model.selection": true,
-  "make.grid.func": "make.lambda.grid.R",
+  "make.grid.func": "make.cox.lambda.grid.R",
   "model.mapper": "multiblox_comparison.mapper.R",
   "pathtoscript": "/home/philippe/github/multiblox/istacox_method_comparison_MapRedR/scripts/",
   "model.outer.reducer": "multiblox_comparison.outer.reducer.R",

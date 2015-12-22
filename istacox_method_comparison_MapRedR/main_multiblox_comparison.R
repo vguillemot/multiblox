@@ -4,12 +4,21 @@
 ###                                   --  simulated data  --                             ###
 ############################################################################################
 ### call
-# Rscript --vanilla main_generate_survival_data_chunks.R data.local.survival_2B_CGH_n64.json cv.scheme.local.survival_CGH_2B.json
-# Rscript --vanilla main_multiblox_comparison.R data.local.survival_2B_CGH_n64.json method.multiblox.comparison.json | grep Rscript > cmd.comparison.n64.log
-# python create_multiblox_workflow.py cmd.comparison.n64.log multiblox_comparison.n64.wf
+# Rscript --vanilla main_generate_survival_data_chunks.R pHGG_data_92samples_GR.json cross_validation_scheme_GR.json
+# Rscript --vanilla main_multiblox_comparison.R pHGG_data_92samples_GR.json multiblox_comparison_GR.json | grep Rscript > cmd.pHGG.log
+# python create_multiblox_comparison_workflow.py cmd.pHGG.log multiblox_comparison_GR.json multiblox.comparison.pHGG.wf
 # soma_workflow_gui&
 # open multiblox_comparison.n64.wf
 # submit
+
+### TCGA
+# Rscript --vanilla main_generate_survival_data_chunks.R brca_data_311samples_GR.json cross_validation_scheme_TCGA_GR.json
+# Rscript --vanilla main_multiblox_comparison.R brca_data_311samples_GR.json multiblox_comparison_TCGA_GR.json | grep Rscript > cmd.brca.log
+# python create_multiblox_comparison_workflow.py cmd.brca.log multiblox_comparison_TCGA_GR.json multiblox.comparison.brca.wf
+# soma_workflow_gui&
+# open multiblox.comparison.brca.wf
+# submit
+
 ###################################################
 
 rm(list=ls()) ; gc()
@@ -77,13 +86,13 @@ B <- length(X)
 my_var_names <- data$my_var_names
 
 # construct the parameters grid
-parameters.grid <- make.lambda.grid(X, path="smart")
+parameters.grid <- make.cox.lambda.grid(X=X, y=y, nl=10, path="smart")
 # print(lambda.grid)
 grid.file <- paste(pathtowritefile, "grid.",  model.name, ".Rdata", sep="")
 save(parameters.grid, file=grid.file)
 
 set.seed(42)
-designs <- c("hierarchical", "complete")
+designs <- c("hierarchical")
 do_coxnet <- TRUE
 inner_cv_seed <- 4257
 

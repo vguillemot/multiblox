@@ -32,7 +32,7 @@ function(model, newdata, newy){
 #   print(paste("beta : ", beta))
 #   print(paste("newdata : ", newdata[1,]))
  # pll <- mapply( function(i, j) sum(newdata[i, ]%*%beta - log(sum( exp(newdata[R[[sprintf("R%i", i)]], ]%*%beta) ))), I, R)
-  pll <- sum(mapply( function(i) {newdata[i, ]%*%beta - log(sum( exp(as.matrix(newdata[R[[sprintf("R%i", i)]], ])%*%beta) ))}, I))
+  pll <- sum(mapply( function(i) {newdata[i, ]%*%beta - log(sum( exp(as.matrix(newdata[R[[sprintf("R%i", i)]],,drop=FALSE])%*%beta) ))}, I))
     
   return(pll=pll)
 }
